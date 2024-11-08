@@ -93,3 +93,8 @@ print(valid_tiles[0])
 <|im_start|>assistant
 The total number of tiles Carla used altogether, knowing that they are less than 50, is \(\boxed{48}\).<|im_end|>
 ```
+
+### TODO
+- [ ] Solve bug during TIR of infinite pending `exec_code` function. See: [Qwen2.5-Math evaluation code](https://github.com/QwenLM/Qwen2.5-Math/blob/main/evaluation/python_executor.py)
+- [ ] Adapt the script for multiple LLMs
+- [ ] Solve issue for >70B models such as QWEN 2.5 math with GGUF and 4bit bitsandbytes 
