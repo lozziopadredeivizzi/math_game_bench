@@ -1,6 +1,22 @@
 # International Mathematical Games Championships (IMGC)
 This repository contains code for evaluating Large Language Models (LLMs) on MathGB, the first benchmark designed specifically for the International Mathematical Games Championships.
 
+# Prerequisites 
+### 1) Clone github repository (or pull request if already done)
+
+### 2) Build Docker Image
+```
+docker build -t math-bench-img .
+```
+⚠️ In case of build errors with the image, consider using `FROM nvidia/cuda:12.3.2-devel-ubuntu20.04` as an alternative base image
+
+### 3) Run the container 
+```
+srun -N 1 --gpus=nvidia_geforce_rtx_3090:1 -w faretra --pty bash # to get the lock
+docker run  -v /home/<YOUR_USERNAME>/math_game_bench:/math_game_bench --rm --gpus "device=$GPU_VISIBLE_DEVICES" -it math-bench-img  /bin/bash # to run container
+```
+
+
 # Evaluation
 ### add env variable
 create an `.env` file and add one line with your HuggingFace token inside: `HF_TOKEN=hf_....`
