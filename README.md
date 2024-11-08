@@ -19,12 +19,12 @@ srun -N 1 --gpus=nvidia_geforce_rtx_3090:1 -w faretra --pty bash # to get the lo
 docker run  -v /home/<YOUR_USERNAME>/math_game_bench:/math_game_bench --rm --gpus "device=$GPU_VISIBLE_DEVICES" -it math-bench-img  /bin/bash # to run container
 ```
 
-### 4) Open byobu
+### 4) Open byobu (run within container)
 ```
 byobu
 ```
 
-### 5) Save requiremens (within container)
+### 5) Save requiremens (run within container)
 ```
 pip freeze > requirements.txt
 ```
@@ -131,4 +131,5 @@ The total number of tiles Carla used altogether, knowing that they are less than
 ### TODO
 - [ ] Solve bug during TIR of infinite pending `exec_code` function. See: [Qwen2.5-Math evaluation code](https://github.com/QwenLM/Qwen2.5-Math/blob/main/evaluation/python_executor.py)
 - [ ] Adapt the script for multiple LLMs
-- [ ] Solve issue for >70B models such as QWEN 2.5 math with GGUF and 4bit bitsandbytes 
+- [ ] Solve issue for >70B models such as QWEN 2.5 math with GGUF and 4bit bitsandbytes
+- [ ] Add supoort for Images
