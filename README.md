@@ -41,8 +41,8 @@ There are two types of inference:
 
 ```python
 python3 -m src.bench_vllm \
-    --model_name Qwen/Qwen2.5-Math-7B-Instruct \
-    --dataset_name lozziopadredeivizzi/mathematic_games_dataset_en \
+    --model_name "Qwen/Qwen2.5-Math-7B-Instruct" \
+    --dataset_name "lozziopadredeivizzi/mathematic_games_dataset_en" \
     --out_dir "./out" \
     --max_samples -1 \ # if > 0 you set a maximun prompt to consider for the execution, useful for debug
     --batch_size 8 \ # this is considered only for COT
@@ -59,8 +59,8 @@ python3 -m src.bench_vllm \
 
 ```python
 python3 -m src.bench_vllm \
-    --model_name Qwen/Qwen2.5-Math-7B-Instruct \
-    --dataset_name lozziopadredeivizzi/mathematic_games_dataset_en \
+    --model_name "Qwen/Qwen2.5-Math-7B-Instruct" \
+    --dataset_name "lozziopadredeivizzi/mathematic_games_dataset_en" \
     --out_dir "./out" \
     --max_samples -1 \ # if > 0 you set a maximun prompt to consider for the execution, useful for debug
     --cache_dir None \
