@@ -14,6 +14,7 @@ from huggingface_hub import login
 from typing import Optional
 from dataclasses import dataclass, field
 from collections import Counter, defaultdict 
+from huggingface_hub import hf_hub_download
 import re
 
 # Load variables from the .env file
@@ -27,6 +28,7 @@ class ScriptArguments:
     dataset_name: Optional[str] = field(default="lozziopadredeivizzi/mathematic_games_dataset_en")
     out_dir: Optional[str] =  field(default="./out", metadata={"help": "outputs directory"})
     max_samples: Optional[int] = field(default=32, metadata={"help": "Maximum number of data to process in train set. Default is -1 to process all data."})
+    start_idx: Optional[int] = field(default=0, metadata={"help": "Index of first prompt to process."})
     batch_size: Optional[int] = field(default=16, metadata={"help": "Maximum number of data to process per batch."})
     cache_dir: Optional[str] =  field(default=None, metadata={"help": "cache dir to store model weights"})
     max_model_len: Optional[int] = field(default=-1, metadata={"help": "Maximum input sequence length"})
@@ -38,7 +40,9 @@ class ScriptArguments:
     text_only: Optional[bool] = field(default=True, metadata={"help": 'whether to consider only textual question without images.'})
     n_gpus: Optional[int] = field(default=1, metadata={"help": "Number of gpus to use for inference."})
     n_rounds: Optional[int] = field(default=3, metadata={"help": "Number of gpus to use for inference."})
-
+    gguf_filename: Optional[str] = field(default='', metadata={"help": "gguf filename to download from HuggingFace"})
+    original_model_name: Optional[str] = field(default='', metadata={"help": "orginal name of the model gguf quantized. es "})
+    
 def exec_code(code):
     # Dictionary to store variables from exec
     exec_locals = {}
@@ -77,7 +81,10 @@ if __name__ == "__main__":
     parser = HfArgumentParser(ScriptArguments)
     args = parser.parse_args_into_dataclasses()[0]
 
-    tokenizer = AutoTokenizer.from_pretrained(args.model_name)
+    if "gguf" not in args.model_name.lower():
+        tokenizer = AutoTokenizer.from_pretrained(args.model_name)
+    else:
+        tokenizer = AutoTokenizer.from_pretrained(args.original_model_name) # name of the original model is needed
 
     if "llama" in args.model_name.lower():
         terminators = [
@@ -88,7 +95,7 @@ if __name__ == "__main__":
         terminators = ['```output']
     else:
         terminators = None
-
+    
     sampling_params = SamplingParams(
         n=args.n_out_sequences, 
         temperature=args.temperature, 
@@ -97,27 +104,43 @@ if __name__ == "__main__":
         stop=terminators,
         seed=None
     )
-    
-    llm = LLM(
-        model=args.model_name,
-        gpu_memory_utilization=.95,
-        dtype="half" if "awq" in args.model_name.lower() else "auto",
-        quantization="awq" if "awq" in args.model_name.lower() else None,
-        #download_dir=args.cache_dir,
-        enforce_eager=True,
-        max_model_len=args.max_model_len if args.max_model_len > 0 else None,
-        trust_remote_code=True,
-        tensor_parallel_size=args.n_gpus,
-    )
+
+    # Qwen2.5-Math-72B-Instruct-Q4_K_M.gguf
+    if "gguf" in args.model_name.lower():
+        gguf_model = hf_hub_download(args.model_name, filename=args.gguf_filename, cache_dir="./models_cache")
+
+    if "4bit" in args.model_name.lower():
+        # bitsandbytes 4 bit quantization 
+        llm = LLM(model="unsloth/Qwen2.5-Math-72B-Instruct-bnb-4bit", # not suppported yet
+            dtype=torch.bfloat16, 
+            trust_remote_code=True, 
+            quantization="bitsandbytes", 
+            load_format="bitsandbytes", 
+            enforce_eager=True, 
+            max_model_len=1024)
+    else:
+        llm = LLM(
+            model=args.model_name if "gguf" not in args.model_name.lower() else gguf_model,
+            tokenizer = "Qwen/Qwen2.5-Math-72B-Instruct",
+            gpu_memory_utilization=.95,
+            dtype="half" if "awq" in args.model_name.lower() else "auto",
+            quantization="awq" if "awq" in args.model_name.lower() else None,
+            download_dir=args.cache_dir,
+            enforce_eager=True,
+            max_model_len=args.max_model_len if args.max_model_len > 0 else None,
+            trust_remote_code=True,
+            tensor_parallel_size=args.n_gpus,
+        )
 
     dataset = load_dataset(args.dataset_name, split="train")
     if args.text_only: # to use to ignore images from data
         dataset = dataset.filter(lambda example: example['image'] == None)
     
     if args.max_samples > 0: # to use for debug
-        dataset = dataset.select(range(args.max_samples))
+        dataset = dataset.select(range(args.start_idx, args.max_samples))
     
-    
+    if args.start_idx > 0 and args.max_samples < 0: # to use for debug
+        dataset = dataset.select(range(args.start_idx, len(dataset)))
 
     prompts = []
     for i, item in enumerate(dataset):
@@ -157,7 +180,7 @@ if __name__ == "__main__":
             f.write(prompts[i]['prompt'])
             f.write("*"*100+'\n')
     
-    if args.n_sampling > 0:
+    if args.n_sampling > 0 and args.mode == "tir":
         import copy
         batches = [[copy.deepcopy(el) for _ in range(args.n_sampling)] for el in prompts]
     else:
@@ -174,6 +197,7 @@ if __name__ == "__main__":
         if args.mode == "cot":
             ids = [el['id'] for el in batch]
             input_prompts = [el['prompt'] for el in batch]
+            gold_answers = [el['answer'] for el in batch]
 
             outputs = llm.generate(input_prompts, sampling_params, use_tqdm=False)
 
@@ -181,7 +205,7 @@ if __name__ == "__main__":
                 completions = [o.text.strip() for o in out.outputs]
                 for completion in completions:
                     with open(args.out_dir + f"/completions/{model_name}/completions_{args.mode}.jsonl", 'a') as f:
-                        json.dump({"id": ids[id_out], "final_answer": extract_answer(completion), "reasoning": completion}, f, ensure_ascii=False)
+                        json.dump({"id": ids[id_out], "gold_answer": gold_answers[id_out], "final_answer": extract_answer(completion), "reasoning": completion}, f, ensure_ascii=False)
                         f.write('\n')
 
         elif args.mode == "tir":
@@ -195,6 +219,7 @@ if __name__ == "__main__":
                 outputs = llm.generate(input_prompts, sampling_params, use_tqdm=False)
                 for id_out, out in enumerate(outputs):
                     completion = out.outputs[0].text
+                    #print("COMPLETION:", completion)
                     if extract_answer(completion).strip() or n_round == args.n_rounds: # answer found or reached max possible rounds
                         
                         messages[id_out].append({"role": "assistant", "content": completion})
