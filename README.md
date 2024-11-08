@@ -3,6 +3,9 @@ This repository contains code for evaluating Large Language Models (LLMs) on Mat
 
 # Prerequisites 
 ### 1) Clone github repository (or pull request if already done)
+```
+git clone https://github.com/lozziopadredeivizzi/math_game_bench.git
+```
 
 ### 2) Build Docker Image
 ```
@@ -16,12 +19,22 @@ srun -N 1 --gpus=nvidia_geforce_rtx_3090:1 -w faretra --pty bash # to get the lo
 docker run  -v /home/<YOUR_USERNAME>/math_game_bench:/math_game_bench --rm --gpus "device=$GPU_VISIBLE_DEVICES" -it math-bench-img  /bin/bash # to run container
 ```
 
+### 4) Open byobu
+```
+byobu
+```
+
+### 5) Save requiremens (within container)
+```
+pip freeze > requirements.txt
+```
 
 # Evaluation
-### add env variable
+
+1) ### Add env variable
 create an `.env` file and add one line with your HuggingFace token inside: `HF_TOKEN=hf_....`
 
-### setup inference parameters
+2) ### Setup inference parameters
 There are two types of inference: `cot` and `tir`
 
 ```python
@@ -40,6 +53,11 @@ python3 -m src.bench_vllm \
     --text_only True \ # ignoring images
     --n_gpus 1 \
     --n_rounds 3 # number of rounds to run ONLY for TIR
+```
+
+3) ### Run the code
+```
+./src/bench_vllm.sh
 ```
 
 ### Example of TIR conversation
