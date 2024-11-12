@@ -44,7 +44,7 @@ RUN pip3 install git+https://github.com/huggingface/trl.git
 # required for flash attention
 RUN pip3 install --upgrade packaging
 RUN pip3 install --upgrade ninja
-RUN pip3 install --upgrade flash-attn --no-build-isolation
+RUN MAX_JOBS=4 pip3 install --upgrade flash-attn --no-build-isolation
 RUN pip3 install --upgrade bitsandbytes
 RUN pip3 install --upgrade vllm
 

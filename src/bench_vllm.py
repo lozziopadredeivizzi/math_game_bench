@@ -121,7 +121,7 @@ if __name__ == "__main__":
     else:
         llm = LLM(
             model=args.model_name if "gguf" not in args.model_name.lower() else gguf_model,
-            tokenizer = "Qwen/Qwen2.5-Math-72B-Instruct",
+            # tokenizer = "Qwen/Qwen2.5-Math-72B-Instruct",
             gpu_memory_utilization=.95,
             dtype="half" if "awq" in args.model_name.lower() else "auto",
             quantization="awq" if "awq" in args.model_name.lower() else None,
@@ -155,6 +155,16 @@ if __name__ == "__main__":
                 messages = [
                     {"role": "system", "content": "Please integrate natural language reasoning with programs to solve the problem above, and put your final answer within \\boxed{}."},
                     {"role": "user", "content": item['question']}
+                ]
+        
+        if "deepseek-math" in args.model_name:
+            if args.mode == "cot":
+                messages = [
+                    {"role": "user", "content": item['question'] + "\nPlease reason step by step, and put your final answer within \\boxed{}."}
+                ]
+            elif args.mode == "tir":
+                messages = [
+                    {"role": "user", "content": item['question'] + "\n\nYou are an expert programmer. Solve the above mathematical problem by writing a Python program. Express your answer as a numeric type or a SymPy object."}
                 ]
 
         text = tokenizer.apply_chat_template(
