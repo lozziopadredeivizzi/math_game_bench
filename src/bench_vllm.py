@@ -192,7 +192,7 @@ if __name__ == "__main__":
                 ]
             elif args.mode == "tir":
                 messages = [
-                    {"role": "user", "content": item['question'] + "\n\nYou are an expert programmer. Solve the above mathematical problem by writing a Python program. Express your answer as a numeric type or a SymPy object. Please put your final answer within \\boxed{}."}
+                    {"role": "user", "content": item['question'] + "\n\nYou are an expert programmer. Solve the above mathematical problem by writing a Python. Express your answer as a numeric type or a SymPy object."}
                 ]
                 
         if "NuminaMath" in args.model_name:
@@ -257,17 +257,18 @@ if __name__ == "__main__":
                         f.write('\n')
 
         elif args.mode == "tir":
+            print("MODE:", args.mode)
             batch_data = [batch,[],[],[]]
             id_prompt = batch[0]['id']
             gold_answer = batch[0]['answer']
             for n_round in range(args.n_rounds+1):
                 input_prompts = [el['prompt'] for el in batch_data[n_round]]
                 messages = [el['chat_history'] for el in batch_data[n_round]]
-                
+                print("PROMPTS:", input_prompts)
                 outputs = llm.generate(input_prompts, sampling_params, use_tqdm=False)
                 for id_out, out in enumerate(outputs):
                     completion = out.outputs[0].text
-                    #print("COMPLETION:", completion)
+                    print("COMPLETION:", completion)
                     if extract_answer(completion).strip() or n_round == args.n_rounds: # answer found or reached max possible rounds
                         
                         messages[id_out].append({"role": "assistant", "content": completion})
@@ -276,9 +277,9 @@ if __name__ == "__main__":
                             json.dump({"id": id_prompt, "gold_answer": gold_answer, "final_answer": extract_answer(completion), "messages": messages[id_out]}, f, ensure_ascii=False)
                             f.write('\n')
 
-                    elif "```python" in completion:
+                    elif "```python" in completion or "deepseek-math" in args.model_name:
                         
-                        response = completion.split("```python")[1].split("```")[0]
+                        response = completion.split("```python")[1].split("```")[0] if "```python" in completion else completion.strip()
                         if response.strip():
                             output = exec_code(response)
                             output = tuple(output.values()) if isinstance(output, dict) else output
