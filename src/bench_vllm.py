@@ -15,7 +15,11 @@ from typing import Optional
 from dataclasses import dataclass, field
 from collections import Counter, defaultdict 
 from huggingface_hub import hf_hub_download
+from timeout_decorator import timeout, TimeoutError
 import re
+import sys
+import io
+import traceback
 
 # Load variables from the .env file
 load_dotenv()
@@ -43,17 +47,37 @@ class ScriptArguments:
     gguf_filename: Optional[str] = field(default='', metadata={"help": "gguf filename to download from HuggingFace"})
     original_model_name: Optional[str] = field(default='', metadata={"help": "orginal name of the model gguf quantized. es "})
     
-def exec_code(code):
-    # Dictionary to store variables from exec
-    exec_locals = {}
+@timeout(5)   
+def exec_code(complete_code):
+     # Redirect stdout and stderr to temporary buffers to capture the output
+    old_stdout = sys.stdout
+    old_stderr = sys.stderr
+    sys.stdout = io.StringIO()
+    sys.stderr = io.StringIO()
+    
     try:
-        # Execute the code and store variables in exec_locals
-        exec(code, {}, exec_locals)
+        exec(complete_code, globals())
+        output = sys.stdout.getvalue()
+
+        if not output:
+            output = "No output was generated."
+    
+    except SyntaxError as e:
+        output = f"SyntaxError: {str(e)}"
+    except NameError as e:
+        output = f"NameError: {str(e)}"
+    except ValueError as e:
+        output = f"ValueError: {str(e)}"
     except Exception as e:
-        # Capture and return the error message in JSON format
-        return json.dumps({"error": str(e)})
-   
-    return exec_locals
+        # For all other exceptions, return the error type and traceback
+        output = f"{e.__class__.__name__}: {str(e)}\nTraceback:\n{traceback.format_exc()}"
+    
+    finally:
+         # Restore stdout and stderr
+        sys.stdout = old_stdout
+        sys.stderr = old_stderr
+    
+    return output
 
 def extract_answer(text):
     start = text.rfind('\\boxed{')
@@ -91,7 +115,11 @@ if __name__ == "__main__":
             tokenizer.eos_token,
             "<|eot_id|>"
         ]
-    elif "Qwen2.5-Math" in args.model_name:
+    elif "Qwen2.5-Math" in args.model_name and args.mode == "tir":
+        terminators = ['```output']
+    elif "deepseek-math" in args.model_name and args.mode == "tir":
+        terminators = ['```output']
+    elif "NuminaMath" in args.model_name and args.mode == "tir":
         terminators = ['```output']
     else:
         terminators = None
@@ -125,7 +153,7 @@ if __name__ == "__main__":
             gpu_memory_utilization=.95,
             dtype="half" if "awq" in args.model_name.lower() else "auto",
             quantization="awq" if "awq" in args.model_name.lower() else None,
-            download_dir=args.cache_dir,
+            #download_dir=args.cache_dir,
             enforce_eager=True,
             max_model_len=args.max_model_len if args.max_model_len > 0 else None,
             trust_remote_code=True,
@@ -164,7 +192,17 @@ if __name__ == "__main__":
                 ]
             elif args.mode == "tir":
                 messages = [
-                    {"role": "user", "content": item['question'] + "\n\nYou are an expert programmer. Solve the above mathematical problem by writing a Python program. Express your answer as a numeric type or a SymPy object."}
+                    {"role": "user", "content": item['question'] + "\n\nYou are an expert programmer. Solve the above mathematical problem by writing a Python program. Express your answer as a numeric type or a SymPy object. Please put your final answer within \\boxed{}."}
+                ]
+                
+        if "NuminaMath" in args.model_name:
+            if args.mode == "cot":
+                messages = [
+                    {"role": "user", "content": item['question']},
+                ]
+            elif args.mode == "tir":
+                messages = [
+                    {"role": "user", "content": item['question']},
                 ]
 
         text = tokenizer.apply_chat_template(
