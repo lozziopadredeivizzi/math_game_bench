@@ -1,6 +1,16 @@
 # International Mathematical Games Championships (IMGC)
 This repository contains code for evaluating Large Language Models (LLMs) on MathGB, the first benchmark designed specifically for the International Mathematical Games Championships.
 
+# Performances
+## Without images (text-generation only)
+|                                |             |   **Evaluation**   |               **Question difficulty** 
+| Model                          | Method      | Pass@1 | Maj@8 | Easy (296 it) | Medium (560 it) | Hard (422 it) |
+|--------------------------------|-------------|--------|-------|---------------|-----------------|---------------|
+| **Qwen2.5-Math-1.5B-Instruct** | CoT         | 29.66% | -     | -             | -               | -             |
+| **Qwen2.5-Math-7B-Instruct**   | CoT         | -      | 39.59%| 45.27%        | 46.43%          | 29.38%        |
+|                                | TIR         | -      | 44.68%| 69.02%        | 38.83%          | 45.05%        |
+| **DeepSeek-Math-7B-Instruct**  | CoT         | -      | 18.86%| 15.20%        | 19.81%          | 20.13%        |
+
 # Prerequisites 
 ### 1) Clone github repository (or pull request if already done)
 ```
@@ -148,7 +158,6 @@ The total number of tiles Carla used altogether, knowing that they are less than
 ```
 
 ### TODO
-- [ ] Solve bug during TIR of infinite pending `exec_code` function. See: [Qwen2.5-Math evaluation code](https://github.com/QwenLM/Qwen2.5-Math/blob/main/evaluation/python_executor.py)
 - [ ] Adapt the script for multiple LLMs
 - [ ] Solve issue for >70B models such as QWEN 2.5 math with GGUF and 4bit bitsandbytes
 - [ ] Add supoort for Images
