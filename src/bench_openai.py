@@ -22,9 +22,9 @@ from collections import Counter, defaultdict
 @dataclass
 class ScriptArguments:
     model_name: Optional[str] = field(default="gpt-4o-2024-08-06", metadata={"help": "model's HF directory or local path"})
-    dataset_name: Optional[str] = field(default="lozziopadredeivizzi/mathematic_games_dataset_en")
+    dataset_name: Optional[str] = field(default="alecocc/mathematic_games_dataset_en")
     out_dir: Optional[str] =  field(default="./out", metadata={"help": "outputs directory"})
-    max_samples: Optional[int] = field(default=32, metadata={"help": "Maximum number of data to process in train set. Default is -1 to process all data."})
+    max_samples: Optional[int] = field(default=-1, metadata={"help": "Maximum number of data to process in train set. Default is -1 to process all data."})
     start_idx: Optional[int] = field(default=0, metadata={"help": "Index of first prompt to process."})
     top_p: Optional[float] = field(default=1.0, metadata={"help": "Top p sampling."})
     n_out_sequences: Optional[int] = field(default=1, metadata={"help": "Number of generated sequences per instance"})
@@ -32,7 +32,7 @@ class ScriptArguments:
     mode: Optional[str] = field(default='cot', metadata={"help": "Inference mode: CoT or TIR", "choices":["cot", "tir"]})
     text_only: Optional[bool] = field(default=True, metadata={"help": 'whether to consider only textual question without images.'})
     
-MODEL_NAME =  args.model_name #"gpt-4o-2024-08-06"
+#"gpt-4o-2024-08-06"
 
 def make_completion(instruction):
     try:
@@ -42,15 +42,17 @@ def make_completion(instruction):
             messages = [
                 {"role": "system","content": "You are a mathematical expert. Solve the user's problem by reasoning step by step, and enclose the final answer in \\boxed{}."},
                 {"role": "user", "content": f"Problem:\n{instruction}"}
-            ]
+            ],
             temperature=0,
             max_tokens=2048,
             top_p=1,
             frequency_penalty=0,
             presence_penalty=0,
-            stop=None
+            stop=None,
+            seed=42
         )
-        return response.choices[0].message.content.strip()
+        
+        return response
     except Exception as e:
         print(e)
         return ""
@@ -88,6 +90,7 @@ if __name__ == "__main__":
     # parse input args
     parser = HfArgumentParser(ScriptArguments)
     args = parser.parse_args_into_dataclasses()[0]
+    MODEL_NAME =  args.model_name 
 
     dataset = load_dataset(args.dataset_name, split="train")
     if args.text_only: # to use to ignore images from data
@@ -99,12 +102,22 @@ if __name__ == "__main__":
     if args.start_idx > 0 and args.max_samples < 0: # to use for debug
         dataset = dataset.select(range(args.start_idx, len(dataset)))
     
-    with open(f'out/completions/openai/completion_{MODEL_NAME}_cot.jsonl', 'a') as f:
-        for i, item in enumerate(tqdm(dataset)): 
-            completion = make_completion(prompt)
-            if completion.strip():
-                os.makedirs('out/completions/openai', exist_ok=True)
-                json.dump({"id": item['id'], "gold_answer": item['answer'], "final_answer": extract_answer(completion), "reasoning": completion}, f, ensure_ascii=False)
-            else:
-                json.dump({"id": item['id'], "gold_answer": item['answer'], "final_answer": "", "reasoning": ""}, f, ensure_ascii=False)
+    os.makedirs('out/completions/openai', exist_ok=True)
+    
+    for i, item in enumerate(tqdm(dataset)): 
+        prompt = item['question']
+        response = make_completion(prompt)
+        completion = response.choices[0].message.content.strip()
+        model = response.model
+        usage = dict(response.usage)
+        with open(f'out/completions/openai/completion_{MODEL_NAME}_cot.jsonl', 'a') as f:    
+            result = {
+                "model": model,
+                "id": item['id'],
+                "gold_answer": item['answer'],
+                "final_answer": extract_answer(completion) if completion else "",
+                "reasoning": completion if completion else "",
+                "usage": usage if completion else {},
+            }
+            json.dump(result, f, ensure_ascii=False)
             f.write('\n')
