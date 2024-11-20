@@ -15,11 +15,13 @@ from typing import Optional
 from dataclasses import dataclass, field
 from collections import Counter, defaultdict 
 from huggingface_hub import hf_hub_download
-from timeout_decorator import timeout, TimeoutError
 import re
 import sys
 import io
 import traceback
+import multiprocessing
+import signal
+import warnings
 
 # Load variables from the .env file
 load_dotenv()
@@ -47,37 +49,45 @@ class ScriptArguments:
     gguf_filename: Optional[str] = field(default='', metadata={"help": "gguf filename to download from HuggingFace"})
     original_model_name: Optional[str] = field(default='', metadata={"help": "orginal name of the model gguf quantized. es "})
     
-@timeout(5)   
-def exec_code(complete_code):
-     # Redirect stdout and stderr to temporary buffers to capture the output
-    old_stdout = sys.stdout
-    old_stderr = sys.stderr
-    sys.stdout = io.StringIO()
-    sys.stderr = io.StringIO()
-    
-    try:
-        exec(complete_code, globals())
-        output = sys.stdout.getvalue()
 
-        if not output:
-            output = "No output was generated."
-    
-    except SyntaxError as e:
-        output = f"SyntaxError: {str(e)}"
-    except NameError as e:
-        output = f"NameError: {str(e)}"
-    except ValueError as e:
-        output = f"ValueError: {str(e)}"
+# Define the target function at the top level so it can be pickled
+def target_function(queue, code):
+    old_stdout = sys.stdout
+    sys.stdout = io.StringIO()  # Redirect stdout to capture output
+    try:
+        exec(code, globals())  # Execute the code passed as argument
+        output = sys.stdout.getvalue()
+        queue.put(output if output else "No output was generated.")
     except Exception as e:
-        # For all other exceptions, return the error type and traceback
-        output = f"{e.__class__.__name__}: {str(e)}\nTraceback:\n{traceback.format_exc()}"
-    
+        # If there's an error, put the exception details in the queue
+        queue.put(f"{e.__class__.__name__}: {str(e)}\nTraceback:\n{traceback.format_exc()}")
     finally:
-         # Restore stdout and stderr
-        sys.stdout = old_stdout
-        sys.stderr = old_stderr
+        sys.stdout = old_stdout  # Restore original stdout
+
+def exec_code_with_timeout(code, timeout=5):
+    # Queue to receive the result from the process
+    result_queue = multiprocessing.Queue()
     
-    return output
+    # Create a new process to execute the code
+    process = multiprocessing.Process(target=target_function, args=(result_queue, code))
+    
+    # Start the process
+    process.start()
+    
+    # Wait for the process to complete with the specified timeout
+    process.join(timeout)
+    
+    if process.is_alive():
+        # If the process didn't finish in time, terminate it
+        process.terminate()
+        process.join()
+        return "TimeoutError: Code execution exceeded the timeout limit."
+    
+    # Try to retrieve the result from the queue
+    try:
+        return result_queue.get_nowait()
+    except Exception as e:
+        return f"Error retrieving result: {str(e)}"
 
 def extract_answer(text):
     start = text.rfind('\\boxed{')
@@ -115,7 +125,7 @@ if __name__ == "__main__":
             tokenizer.eos_token,
             "<|eot_id|>"
         ]
-    elif "Qwen2.5-Math" in args.model_name and args.mode == "tir":
+    elif "Qwen2.5-Math" or "Mathstral" in args.model_name and args.mode == "tir":
         terminators = ['```output']
     elif "deepseek-math" in args.model_name and args.mode == "tir":
         terminators = ['```output']
@@ -173,7 +183,7 @@ if __name__ == "__main__":
     prompts = []
     for i, item in enumerate(dataset):
         # currenlty only Qwen2.5-Math is handled. This part must be adapted for each LLM considered in our tests. Maybe a separate function in a utils folders might help.
-        if "Qwen2.5-Math" in args.model_name:
+        if "Qwen2.5-Math" or "Mathstral" in args.model_name:
             if args.mode == "cot":
                 messages = [
                     {"role": "system", "content": "Please reason step by step, and put your final answer within \\boxed{}."},
@@ -257,18 +267,18 @@ if __name__ == "__main__":
                         f.write('\n')
 
         elif args.mode == "tir":
-            print("MODE:", args.mode)
+            #print("MODE:", args.mode)
             batch_data = [batch,[],[],[]]
             id_prompt = batch[0]['id']
             gold_answer = batch[0]['answer']
             for n_round in range(args.n_rounds+1):
                 input_prompts = [el['prompt'] for el in batch_data[n_round]]
                 messages = [el['chat_history'] for el in batch_data[n_round]]
-                print("PROMPTS:", input_prompts)
+                #print("PROMPTS:", input_prompts)
                 outputs = llm.generate(input_prompts, sampling_params, use_tqdm=False)
                 for id_out, out in enumerate(outputs):
                     completion = out.outputs[0].text
-                    print("COMPLETION:", completion)
+                    #print("COMPLETION:", completion)
                     if extract_answer(completion).strip() or n_round == args.n_rounds: # answer found or reached max possible rounds
                         
                         messages[id_out].append({"role": "assistant", "content": completion})
@@ -281,7 +291,7 @@ if __name__ == "__main__":
                         
                         response = completion.split("```python")[1].split("```")[0] if "```python" in completion else completion.strip()
                         if response.strip():
-                            output = exec_code(response)
+                            output = exec_code_with_timeout(response, timeout=5)
                             output = tuple(output.values()) if isinstance(output, dict) else output
                             
                         
