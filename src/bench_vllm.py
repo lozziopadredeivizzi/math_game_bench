@@ -125,12 +125,14 @@ if __name__ == "__main__":
             tokenizer.eos_token,
             "<|eot_id|>"
         ]
-    elif "Qwen2.5-Math" or "Mathstral" in args.model_name and args.mode == "tir":
+    elif "Qwen2.5-Math" in args.model_name and args.mode == "tir":
         terminators = ['```output']
     elif "deepseek-math" in args.model_name and args.mode == "tir":
         terminators = ['```output']
     elif "NuminaMath" in args.model_name and args.mode == "tir":
         terminators = ['```output']
+    elif "tora" in args.model_name and args.mode == "tir":
+        terminators = ['```output'] 
     else:
         terminators = None
     
@@ -183,7 +185,7 @@ if __name__ == "__main__":
     prompts = []
     for i, item in enumerate(dataset):
         # currenlty only Qwen2.5-Math is handled. This part must be adapted for each LLM considered in our tests. Maybe a separate function in a utils folders might help.
-        if "Qwen2.5-Math" or "Mathstral" in args.model_name:
+        if "Qwen2.5-Math" in args.model_name or "Mathstral" in args.model_name or "Llama" in args.model_name or "tora" in args.model_name:
             if args.mode == "cot":
                 messages = [
                     {"role": "system", "content": "Please reason step by step, and put your final answer within \\boxed{}."},

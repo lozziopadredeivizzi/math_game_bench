@@ -8,6 +8,39 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+def defy_prompt_messages(model_name, mode, question):
+    if "Qwen2.5-Math" or "Mathstral" or "Llama" in model_name:
+            if mode == "cot":
+                return [
+                    {"role": "system", "content": "Please reason step by step, and put your final answer within \\boxed{}."},
+                    {"role": "user", "content": question}
+                ]
+            elif mode == "tir":
+                return [
+                    {"role": "system", "content": "Please integrate natural language reasoning with programs to solve the problem above, and put your final answer within \\boxed{}."},
+                    {"role": "user", "content": question}
+                ]
+        
+    if "deepseek-math" in model_name:
+            if mode == "cot":
+                return [
+                    {"role": "user", "content": question + "\nPlease reason step by step, and put your final answer within \\boxed{}."}
+                ]
+            elif mode == "tir":
+                return [
+                    {"role": "user", "content": question + "\n\nYou are an expert programmer. Solve the above mathematical problem by writing a Python. Express your answer as a numeric type or a SymPy object."}
+                ]
+                
+    if "NuminaMath" or "tora" in model_name:
+            if mode == "cot":
+                return [
+                    {"role": "user", "content": question},
+                ]
+            elif mode == "tir":
+                return [
+                    {"role": "user", "content": question},
+                ]
+
 def print_chat_messages(input_filename: str, model_tokenizer_id: str, out_dir: str = "out/logs") -> None:
     os.makedirs(out_dir, exist_ok=True)
     print(f"Using tokenizer: {model_tokenizer_id}")
