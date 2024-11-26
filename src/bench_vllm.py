@@ -132,7 +132,7 @@ if __name__ == "__main__":
     elif "NuminaMath" in args.model_name and args.mode == "tir":
         terminators = ['```output']
     elif "tora" in args.model_name and args.mode == "tir":
-        terminators = ['```output'] 
+        terminators = ["</s>", "```output", "Solution:"] 
     else:
         terminators = None
     
@@ -300,7 +300,7 @@ if __name__ == "__main__":
                                         msg_content = msg['content'].replace("Solution:", "").strip()
                                         text += f"Question: {msg_content}\n\n"
                                     else:
-                                        text += (msg['content'] + "\n")
+                                        text += (msg['content'].strip() + "\n")
 
                                 elif msg['role'] == "assistant": 
                                     if j == 1:
@@ -324,8 +324,8 @@ if __name__ == "__main__":
                             output = tuple(output.values()) if isinstance(output, dict) else output
                             
                         
-                        messages[id_out].append({"role": "assistant", "content": completion})
-                        messages[id_out].append({"role": "user", "content": f"```output\n{output}\n```"})
+                        messages[id_out].append({"role": "assistant", "content": completion.strip()})
+                        messages[id_out].append({"role": "user", "content": f"```output\n{output.strip()}\n```"})
                         
                         if n_round < args.n_rounds and messages[id_out]:
                             
