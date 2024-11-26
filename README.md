@@ -10,6 +10,7 @@ This repository contains code for evaluating Large Language Models (LLMs) on Mat
 | **Qwen2.5-Math-7B-Instruct**   | CoT         | -      | 39.52%| 44,86%        | 45,20%          | 29,06%        |
 |                                | TIR         | -      | 44.68%| 69.02%        | 38.83%          | 45.05%        |
 | **DeepSeek-Math-7B-Instruct**  | CoT         | -      | 19,51%| 14,81%        | 21,43%          | 20,21%        |
+|                                | TIR         | -      | 20.09%| 20.56%        | 24.39%          | 13.26%        |
 | **NumminaMath-7B-Instruct**    | CoT         | -      | 25.12%| 24.66%        | 26.42%          | 23.89%        |
 |                                | TIR         | -      | 36.93%| 41.55%        | 41.86%          | 27.25%        |
 | **MathStral-7B-Instruct**      | CoT         | -      | 24.26%| 23.99%        | 30.36%          | 16.35%        |
