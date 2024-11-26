@@ -216,12 +216,19 @@ if __name__ == "__main__":
                 messages = [
                     {"role": "user", "content": item['question']},
                 ]
+        
+        if "tora" in args.model_name:
+            messages = [
+                {"role": "user", "content": item['question']},
+            ]
+            text = f"Question: {item['question']}\n\nSolution:"
 
-        text = tokenizer.apply_chat_template(
-            messages,
-            tokenize=False,
-            add_generation_prompt=True
-        )
+        else:
+            text = tokenizer.apply_chat_template(
+                messages,
+                tokenize=False,
+                add_generation_prompt=True
+            )
 
         prompts.append({
             "id": item['id'], 
@@ -284,6 +291,26 @@ if __name__ == "__main__":
                     if extract_answer(completion).strip() or n_round == args.n_rounds: # answer found or reached max possible rounds
                         
                         messages[id_out].append({"role": "assistant", "content": completion})
+                        if "tora" in args.model_name:
+                            text = ""
+                            for j, msg in enumerate(messages[id_out]):
+                                
+                                if msg["role"] == "user":
+                                    if j == 0:
+                                        msg_content = msg['content'].replace("Solution:", "").strip()
+                                        text += f"Question: {msg_content}\n\n"
+                                    else:
+                                        text += (msg['content'] + "\n")
+
+                                elif msg['role'] == "assistant": 
+                                    if j == 1:
+                                        text += f"Solution:\n{msg['content'].strip()}\n"
+                                    else:
+                                        text += (msg['content'].strip() + "\n")
+                                
+                            print("CONVO: ", text)
+                            print(".....................................")
+                            print()
                         
                         with open(args.out_dir + f"/completions/{model_name}/completions_{args.mode}.jsonl", 'a') as f:
                             json.dump({"id": id_prompt, "gold_answer": gold_answer, "final_answer": extract_answer(completion), "messages": messages[id_out]}, f, ensure_ascii=False)
@@ -301,11 +328,30 @@ if __name__ == "__main__":
                         messages[id_out].append({"role": "user", "content": f"```output\n{output}\n```"})
                         
                         if n_round < args.n_rounds and messages[id_out]:
-                            text = tokenizer.apply_chat_template(
-                                messages[id_out],
-                                tokenize=False,
-                                add_generation_prompt=True
-                            )
+                            
+                            if "tora" in args.model_name:
+                                text = ""
+                                for j, msg in enumerate(messages[id_out]):
+                                    
+                                    if msg["role"] == "user":
+                                        if j == 0:
+                                            msg_content = msg['content'].replace("Solution:", "").strip()
+                                            text += f"Question: {msg_content}\n\n"
+                                        else:
+                                            text += (msg['content'] + "\n")
+
+                                    elif msg['role'] == "assistant": 
+                                        if j == 1:
+                                            text += f"Solution:\n{msg['content'].strip()}\n"
+                                        else:
+                                            text += (msg['content'].strip() + "\n")
+                                    
+                            else:
+                                text = tokenizer.apply_chat_template(
+                                    messages[id_out],
+                                    tokenize=False,
+                                    add_generation_prompt=True
+                                )
                             
                             batch_data[n_round+1].append({
                                 "id": id_prompt,
