@@ -308,9 +308,8 @@ if __name__ == "__main__":
                                     else:
                                         text += (msg['content'].strip() + "\n")
                                 
-                            print("CONVO: ", text)
-                            print(".....................................")
-                            print()
+                            logger.info(f"Conversation:\n{text}")
+                            logger.info(".....................................\n")
                         
                         with open(args.out_dir + f"/completions/{model_name}/completions_{args.mode}.jsonl", 'a') as f:
                             json.dump({"id": id_prompt, "gold_answer": gold_answer, "final_answer": extract_answer(completion), "messages": messages[id_out]}, f, ensure_ascii=False)
