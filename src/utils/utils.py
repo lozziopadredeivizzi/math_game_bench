@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 def defy_prompt_messages(model_name, mode, question):
-    if "Qwen2.5-Math" or "Mathstral" or "Llama" in model_name:
+    if "Qwen2.5-Math" in model_name or "Mathstral" in model_name or "Llama" in model_name:
             if mode == "cot":
                 return [
                     {"role": "system", "content": "Please reason step by step, and put your final answer within \\boxed{}."},
@@ -31,7 +31,7 @@ def defy_prompt_messages(model_name, mode, question):
                     {"role": "user", "content": question + "\n\nYou are an expert programmer. Solve the above mathematical problem by writing a Python. Express your answer as a numeric type or a SymPy object."}
                 ]
                 
-    if "NuminaMath" or "tora" in model_name:
+    if "NuminaMath" in model_name:
             if mode == "cot":
                 return [
                     {"role": "user", "content": question},
