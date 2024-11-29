@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 def defy_prompt_messages(model_name, mode, question):
-    if "Qwen2.5-Math" in model_name or "Mathstral" in model_name or "Llama" in model_name:
+    if "Qwen2.5-Math" in model_name or "Mathstral" in model_name:
             if mode == "cot":
                 return [
                     {"role": "system", "content": "Please reason step by step, and put your final answer within \\boxed{}."},

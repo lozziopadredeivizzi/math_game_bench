@@ -1,16 +1,14 @@
 python3 -m src.bench_vllm \
-    --model_name Qwen/Qwen2.5-Math-7B-Instruct \
-    --dataset_name lozziopadredeivizzi/mathematic_games_dataset_en \
+    --model_name "Qwen/Qwen2.5-Math-7B-Instruct" \
+    --dataset_name "lozziopadredeivizzi/mathematic_games_dataset_en" \
     --out_dir "./out" \
-    --max_samples 4 \
-    --batch_size 2 \
+    --max_samples -1 \
     --cache_dir None \
     --n_out_sequences 1 \
-    --n_sampling 8 \
-    --temperature 0.7 \
+    --n_sampling 1 \
+    --temperature 0 \
     --top_p 0.8 \
     --mode tir \
     --text_only True \
     --n_gpus 1 \
-    --max_model_len 4000 \
-    --n_rounds 3
+    --n_rounds 3 

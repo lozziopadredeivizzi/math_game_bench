@@ -3,9 +3,11 @@ This repository contains code for evaluating Large Language Models (LLMs) on Mat
 
 # Performances
 ## Without images (text-generation only)
-| Model                          | Method      | Pass@1 | Maj@8 | Easy (296 it) | Medium (560 it) | Hard (422 it) |
+| Model                          | Method      | Pass@1 | Maj@8 | Easy (321 it) | Medium (615 it) | Hard (430 it) |
 |--------------------------------|-------------|--------|-------|---------------|-----------------|---------------|
-| **Qwen2.5-Math-1.5B-Instruct** | CoT         | 29.66% | -     | -             | -               | -             |
+| **DeepSeek-Math-7B-Instruct**  | TIR         | 13.61% | -     | 13.40%        | 18.21%          | 7.21%         |
+| **NumminaMath-7B-Instruct**    | TIR         | 30.89% | -     | 36.76%        | 34.80%          | 20.00%        |
+| **ToRA-7B**                    | TIR         | 11.02% | -     | 9.66%         | 13.98%          | 7.91%         |
 | **GPT-4**                      | CoT         | 42.80% | -     | 43.92%        | 49.29%          | 33.41%        |  
 | **Qwen2.5-Math-7B-Instruct**   | CoT         | -      | 39.52%| 44,86%        | 45,20%          | 29,06%        |
 |                                | TIR         | -      | 44.68%| 69.02%        | 38.83%          | 45.05%        |
@@ -14,6 +16,7 @@ This repository contains code for evaluating Large Language Models (LLMs) on Mat
 | **NumminaMath-7B-Instruct**    | CoT         | -      | 25.12%| 24.66%        | 26.42%          | 23.89%        |
 |                                | TIR         | -      | 36.93%| 41.55%        | 41.86%          | 27.25%        |
 | **MathStral-7B-Instruct**      | CoT         | -      | 24.26%| 23.99%        | 30.36%          | 16.35%        |
+| **ToRA-7B**                    | TIR         | -      | 11.46%| 11.21%        | 14.31%          | 7.23%         |
 
 # Prerequisites 
 ### 1) Clone github repository (or pull request if already done)
