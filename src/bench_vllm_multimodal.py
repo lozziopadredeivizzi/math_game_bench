@@ -34,7 +34,7 @@ class ScriptArguments:
     model_name: Optional[str] = field(default="microsoft/Phi-3.5-vision-instruct", metadata={"help": "model's HF directory or local path"})
     dataset_name: Optional[str] = field(default="lozziopadredeivizzi/mathematic_games_dataset_en")
     out_dir: Optional[str] =  field(default="./out", metadata={"help": "outputs directory"})
-    max_samples: Optional[int] = field(default=-1, metadata={"help": "Maximum number of data to process in train set. Default is -1 to process all data."})
+    max_samples: Optional[int] = field(default=32, metadata={"help": "Maximum number of data to process in train set. Default is -1 to process all data."})
     start_idx: Optional[int] = field(default=0, metadata={"help": "Index of first prompt to process."})
     batch_size: Optional[int] = field(default=16, metadata={"help": "Maximum number of data to process per batch."})
     cache_dir: Optional[str] =  field(default=None, metadata={"help": "cache dir to store model weights"})
@@ -97,51 +97,8 @@ def load_phi3v(dataset):
     
     return requests
 
-def load_qwen2(dataset):
-    
-    llm = LLM(
-        model="Qwen/Qwen2-VL-7B-Instruct",
-        trust_remote_code=True,
-        max_model_len=4096,
-        limit_mm_per_prompt={"image": 1},
-        mm_processor_kwargs={"num_crops": 16},
-    )
-    
-    requests = []
-    stop_token_ids = None
-    for item in dataset:
-        img = item['image']
-        question = item['question']
-        gold_answer =  item['answer'],
-        prompt = [
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "image",
-                        "image": img,
-                    },
-                    {"type": "text", "text": f"You are a mathematical expert. Solve the given problem by reasoning step by step.\n\nProblem: {question.strip()}\n\nPlease, make sure to enclose your final answer within \\boxed{{}}."},
-                ],
-            }
-        ]
-        requests.append({
-            "id": item['id'], 
-            "answer": item['answer'],
-            "request":  ModelRequestData(
-                llm=llm,
-                prompt=prompt,
-                stop_token_ids=stop_token_ids,
-                image_data=[img],#[fetch_image(url) for url in image_urls],
-                chat_template=None,
-            )}
-        )
-    
-    return requests
-
 model_example_map = {
     "Phi-3.5-vision-instruct": load_phi3v,
-    "Qwen2-VL-7B-Instruct": load_qwen2,
 }
 
 if __name__ == "__main__":
