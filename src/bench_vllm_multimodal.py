@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 from tqdm import tqdm
 from datasets import load_dataset, Dataset
 from vllm import LLM, SamplingParams
-from transformers import AutoTokenizer, HfArgumentParser
+from transformers import AutoTokenizer, HfArgumentParser, AutoProcessor
 from huggingface_hub import login
 from typing import Optional, List, NamedTuple
 from dataclasses import dataclass, field
@@ -64,6 +64,74 @@ def extract_answer(text):
     end = text.rfind("}")
     return text[:end] if start >= 0 and end >= 0 else ""
 
+def load_qwen2_vl(dataset):
+    try:
+        from qwen_vl_utils import process_vision_info
+    except ModuleNotFoundError:
+        print('WARNING: `qwen-vl-utils` not installed, input images will not '
+              'be automatically resized. You can enable this functionality by '
+              '`pip install qwen-vl-utils`.')
+        process_vision_info = None
+
+    model_name = "Qwen/Qwen2-VL-7B-Instruct"
+
+    # Tested on L40
+    llm = LLM(
+        model=model_name,
+        max_model_len=32768 if process_vision_info is None else 4096,
+        #max_num_seqs=5,
+        limit_mm_per_prompt={"image": 1},
+    )
+
+    requests = []
+    for item in dataset:
+        img = item['image']
+        question = item['question']
+
+        placeholders = [{"type": "image", "image": img}]
+        messages = [{
+            "role": "system",
+            "content": "You are a mathematical expert. Solve the given problem by reasoning step by step. Please, make sure to enclose your final answer within \\boxed{{}}."
+        }, {
+            "role":
+            "user",
+            "content": [
+                *placeholders,
+                {
+                    "type": "text",
+                    "text": f"Problem: {question.strip()}\n\nLet's think step by step. Remember to enclose your final answer within \\boxed{{}}."
+                },
+            ],
+        }]
+        
+
+        processor = AutoProcessor.from_pretrained(model_name)
+
+        prompt = processor.apply_chat_template(messages,
+                                            tokenize=False,
+                                            add_generation_prompt=True)
+
+        stop_token_ids = None
+
+        if process_vision_info is None:
+            image_data = [img]
+        else:
+            image_data, _ = process_vision_info(messages)
+
+        requests.append({
+            "id": item['id'], 
+            "answer": item['answer'],
+            "request":  ModelRequestData(
+                llm=llm,
+                prompt=prompt,
+                stop_token_ids=stop_token_ids,
+                image_data=image_data,#[fetch_image(url) for url in image_urls],
+                chat_template=None,
+            )}
+        )
+
+    return requests
+
 def load_phi3v(dataset):
     
     llm = LLM(
@@ -99,6 +167,7 @@ def load_phi3v(dataset):
 
 model_example_map = {
     "Phi-3.5-vision-instruct": load_phi3v,
+    "Qwen2-VL-7B-Instruct": load_qwen2_vl,
 }
 
 if __name__ == "__main__":
@@ -140,11 +209,21 @@ if __name__ == "__main__":
         stop_token_ids=req_data[0]['request'].stop_token_ids,
         seed=0)
 
+
     batches = [req_data[i:i+args.batch_size] for i in range(0, len(req_data), args.batch_size)]
 
     model_name = args.model_name.split("/")[-1]
     os.makedirs(args.out_dir + f"/completions/multimodal/{model_name}", exist_ok=True)
     eval_mode_str = "pass_1" if args.n_out_sequences == 1 else f"maj_{args.n_out_sequences}"
+
+    with open(args.out_dir + f'/prompts/{model_name}_example_prompts.txt', 'w') as f:
+        for i in range(5):
+            prompt = req_data[i]['request'].prompt
+            f.write(f"ID: {req_data[i]['id']}\n")
+            f.write(prompt)
+            f.write("*"*100+'\n')
+
+
     for batch in tqdm(batches):
         ids = [el['id'] for el in batch]
         batch_requests = [el['request'] for el in batch]
