@@ -166,3 +166,6 @@ out*.txt
 example*.txt
 out/
 fileJSONL/
+src/outputs/
+ngrok-stable-linux-amd64.zip
+.Trash-0
