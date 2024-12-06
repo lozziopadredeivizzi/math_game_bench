@@ -3,7 +3,7 @@ This repository contains code for evaluating Large Language Models (LLMs) on Mat
 
 # Performances
 ## Without images (text-generation only)
-| Model                          | Method      | Pass@1 | Maj@8 | Easy (321 it) | Medium (615 it) | Hard (430 it) |
+| Model                          | Method      | Pass@1 | Maj@8 | Easy (525 it) | Medium (424 it) | Hard (430 it) |
 |--------------------------------|-------------|--------|-------|---------------|-----------------|---------------|
 | **Qwen2.5-Math-7B-Instruct**   | CoT         | 35.71% | -     | 44.30%        | 33.96%          | 26.74%        |
 |                                | TIR         | 42.84% | -     | 49.91%        | 40.57%          | 36.28%        |
