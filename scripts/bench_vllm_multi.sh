@@ -1,8 +1,8 @@
 python3 -m src.bench_vllm_multimodal \
     --model_name "Qwen/Qwen2-VL-7B-Instruct" \
-    --dataset_name "alecocc/mathematic_games_dataset_en" \
+    --dataset_name "lozziopadredeivizzi/mathematic_games_dataset_en" \
     --out_dir "./out" \
-    --max_samples 32 \
+    --max_samples -1 \
     --batch_size 4 \
     --cache_dir None \
     --n_out_sequences 8 \
