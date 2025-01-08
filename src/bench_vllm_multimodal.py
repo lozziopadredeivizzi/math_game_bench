@@ -34,7 +34,7 @@ class ScriptArguments:
     model_name: Optional[str] = field(default="microsoft/Phi-3.5-vision-instruct", metadata={"help": "model's HF directory or local path"})
     dataset_name: Optional[str] = field(default="lozziopadredeivizzi/mathematic_games_dataset_en")
     out_dir: Optional[str] =  field(default="./out", metadata={"help": "outputs directory"})
-    max_samples: Optional[int] = field(default=32, metadata={"help": "Maximum number of data to process in train set. Default is -1 to process all data."})
+    max_samples: Optional[int] = field(default=-1, metadata={"help": "Maximum number of data to process in train set. Default is -1 to process all data."})
     start_idx: Optional[int] = field(default=0, metadata={"help": "Index of first prompt to process."})
     batch_size: Optional[int] = field(default=16, metadata={"help": "Maximum number of data to process per batch."})
     cache_dir: Optional[str] =  field(default=None, metadata={"help": "cache dir to store model weights"})
@@ -80,57 +80,261 @@ def load_qwen2_vl(dataset):
         model=model_name,
         max_model_len=32768 if process_vision_info is None else 4096,
         #max_num_seqs=5,
-        limit_mm_per_prompt={"image": 1},
+        limit_mm_per_prompt={"image": 2},
     )
 
     requests = []
-    for item in dataset:
-        img = item['image']
-        question = item['question']
+    id_example = 3
+    img_example = dataset['image'][id_example]
+    question_example = dataset['question'][id_example]
+    reasoning_example = "To determine the number of different types of Trebon that can be made by changing the order of the three layers, we need to consider the permutations of the three different layers.\n\nThe three layers are:\n1. Strawberry\n2. Apple\n3. Raspberry\n\nWe can arrange these three layers in different orders. The number of permutations of three distinct items is given by the formula for permutations of n items, which is n! (n factorial).\n\nFor three items, the number of permutations is:\n3! = 3 × 2 × 1 = 6\n\nSo, there are 6 different types of Trebon that can be made by changing the order of the three layers. The answer is:\n\\boxed{6}"
+    for k, item in enumerate(dataset):
+        if k!= id_example:
+            img = item['image']
+            question = item['question']
 
-        placeholders = [{"type": "image", "image": img}]
-        messages = [{
-            "role": "system",
-            "content": "You are a mathematical expert. Solve the given problem by reasoning step by step. Please, make sure to enclose your final answer within \\boxed{{}}."
-        }, {
-            "role":
-            "user",
-            "content": [
-                *placeholders,
-                {
-                    "type": "text",
-                    "text": f"Problem: {question.strip()}\n\nLet's think step by step. Remember to enclose your final answer within \\boxed{{}}."
-                },
-            ],
-        }]
-        
+            placeholders = [{"type": "image", "image": img}]
+            placeholders_example = [{"type": "image", "image": img_example}]
+            messages = [{
+                "role": "system",
+                "content": "You are a mathematical expert. Solve the given problem by reasoning step by step. Please, for the validity of the answer, enclose your final answer within \\boxed{{}}."
+            }, {
+                "role":
+                "user",
+                "content": [
+                    *placeholders_example,
+                    {
+                        "type": "text",
+                        "text": f"Problem: {question_example.strip()}\n\nLet's think step by step. Remember to enclose your final answer within \\boxed{{}}."
+                    },
+                ],
+                    },
+                    {
+                "role":
+                "assistant",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": f"{reasoning_example}"
+                    },
+                ],
+            },
+                    {
+                "role":
+                "user",
+                "content": [
+                    *placeholders,
+                    {
+                        "type": "text",
+                        "text": f"Yes, that's correct! Now solve this new problem.\n\nProblem: {question.strip()}\n\nLet's think step by step. Remember to enclose your final answer within \\boxed{{}}."
+                    },
+                ],
+                    }
+            ]
+            
 
-        processor = AutoProcessor.from_pretrained(model_name)
+            processor = AutoProcessor.from_pretrained(model_name)
 
-        prompt = processor.apply_chat_template(messages,
-                                            tokenize=False,
-                                            add_generation_prompt=True)
+            prompt = processor.apply_chat_template(messages,
+                                                tokenize=False,
+                                                add_generation_prompt=True)
 
-        stop_token_ids = None
+            stop_token_ids = None
 
-        if process_vision_info is None:
-            image_data = [img]
-        else:
-            image_data, _ = process_vision_info(messages)
+            if process_vision_info is None:
+                image_data = [img]
+            else:
+                image_data, _ = process_vision_info(messages)
 
-        requests.append({
-            "id": item['id'], 
-            "answer": item['answer'],
-            "request":  ModelRequestData(
-                llm=llm,
-                prompt=prompt,
-                stop_token_ids=stop_token_ids,
-                image_data=image_data,#[fetch_image(url) for url in image_urls],
-                chat_template=None,
-            )}
-        )
+            requests.append({
+                "id": item['id'], 
+                "answer": item['answer'],
+                "request":  ModelRequestData(
+                    llm=llm,
+                    prompt=prompt,
+                    stop_token_ids=stop_token_ids,
+                    image_data=image_data,#[fetch_image(url) for url in image_urls],
+                    chat_template=None,
+                )}
+            )
 
     return requests
+
+def load_qvq_72b(dataset):
+    model_name = "kosbu/QVQ-72B-Preview-AWQ"
+
+    # Tested on L40
+    llm = LLM(
+        model=model_name,
+        max_model_len=4096,
+        #max_num_seqs=5,
+        limit_mm_per_prompt={"image": 2},
+    )
+
+    requests = []
+    id_example = 3
+    img_example = dataset['image'][id_example]
+    question_example = dataset['question'][id_example]
+    reasoning_example = "To determine the number of different types of Trebon that can be made by changing the order of the three layers, we need to consider the permutations of the three different layers.\n\nThe three layers are:\n1. Strawberry\n2. Apple\n3. Raspberry\n\nWe can arrange these three layers in different orders. The number of permutations of three distinct items is given by the formula for permutations of n items, which is n! (n factorial).\n\nFor three items, the number of permutations is:\n3! = 3 × 2 × 1 = 6\n\nSo, there are 6 different types of Trebon that can be made by changing the order of the three layers. The answer is:\n\\boxed{6}"
+    for k, item in enumerate(dataset):
+        if k!= id_example:
+            img = item['image']
+            question = item['question']
+
+            placeholders = [{"type": "image", "image": img}]
+            placeholders_example = [{"type": "image", "image": img_example}]
+            messages = [{
+                "role": "system",
+                "content": "You are a mathematical expert. Solve the given problem by reasoning step by step. Please, for the validity of the answer, enclose your final answer within \\boxed{{}}."
+            }, {
+                "role":
+                "user",
+                "content": [
+                    *placeholders_example,
+                    {
+                        "type": "text",
+                        "text": f"Problem: {question_example.strip()}\n\nLet's think step by step. Remember to enclose your final answer within \\boxed{{}}."
+                    },
+                ],
+                    },
+                    {
+                "role":
+                "assistant",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": f"{reasoning_example}"
+                    },
+                ],
+            },
+                    {
+                "role":
+                "user",
+                "content": [
+                    *placeholders,
+                    {
+                        "type": "text",
+                        "text": f"Yes, that's correct! Now solve this new problem.\n\nProblem: {question.strip()}\n\nLet's think step by step. Remember to enclose your final answer within \\boxed{{}}."
+                    },
+                ],
+                    }
+            ]
+            
+
+            processor = AutoProcessor.from_pretrained(model_name)
+
+            prompt = processor.apply_chat_template(messages,
+                                                tokenize=False,
+                                                add_generation_prompt=True)
+
+            stop_token_ids = None
+
+            requests.append({
+                "id": item['id'], 
+                "answer": item['answer'],
+                "request":  ModelRequestData(
+                    llm=llm,
+                    prompt=prompt,
+                    stop_token_ids=stop_token_ids,
+                    image_data=[img],
+                    chat_template=None,
+                )}
+            )
+
+    return requests
+
+def load_intern(dataset):
+    model_name = "OpenGVLab/InternVL2_5-8B"
+
+    # Configurazione del modello LLM
+    llm = LLM(
+        model=model_name,
+        max_model_len=4096,
+        limit_mm_per_prompt={"image": 2},
+        trust_remote_code=True,
+    )
+
+    requests = []
+    id_example = 3
+    img_example = dataset['image'][id_example]
+    question_example = dataset['question'][id_example]
+    reasoning_example = (
+        "To determine the number of different types of Trebon that can be made by changing the order of the three layers, "
+        "we need to consider the permutations of the three different layers.\n\n"
+        "The three layers are:\n1. Strawberry\n2. Apple\n3. Raspberry\n\n"
+        "We can arrange these three layers in different orders. The number of permutations of three distinct items is given by the formula for permutations of n items, which is n! (n factorial).\n\n"
+        "For three items, the number of permutations is:\n3! = 3 × 2 × 1 = 6\n\n"
+        "So, there are 6 different types of Trebon that can be made by changing the order of the three layers. The answer is:\n\\boxed{6}"
+    )
+
+    for k, item in enumerate(dataset):
+        if k != id_example:
+            img = item['image']
+            question = item['question']
+
+            # Placeholder per immagine di esempio
+            placeholders_example = f"[Image: {img_example}]"
+            placeholders = f"[Image: {img}]"
+
+            # Costruzione dei messaggi
+            messages = [
+                {
+                    "role": "system",
+                    "content": (
+                        "You are a mathematical expert. Solve the given problem by reasoning step by step. "
+                        "Please, for the validity of the answer, enclose your final answer within \\boxed{{}}."
+                    ),
+                },
+                {
+                    "role": "user",
+                    "content": (
+                        f"{placeholders_example}\n\n"
+                        f"Problem: {question_example.strip()}\n\n"
+                        "Let's think step by step. Remember to enclose your final answer within \\boxed{{}}."
+                    ),
+                },
+                {
+                    "role": "assistant",
+                    "content": reasoning_example,
+                },
+                {
+                    "role": "user",
+                    "content": (
+                        f"{placeholders}\n\n"
+                        f"Yes, that's correct! Now solve this new problem.\n\n"
+                        f"Problem: {question.strip()}\n\n"
+                        "Let's think step by step. Remember to enclose your final answer within \\boxed{{}}."
+                    ),
+                },
+            ]
+
+            # Processore per il modello
+            processor = AutoProcessor.from_pretrained(model_name, trust_remote_code=True)
+
+            # Creazione del prompt
+            prompt = processor.apply_chat_template(
+                messages,
+                tokenize=False,
+                add_generation_prompt=True,
+            )
+
+            stop_token_ids = None
+
+            # Aggiunta alla lista di richieste
+            requests.append({
+                "id": item['id'],
+                "answer": item['answer'],
+                "request": ModelRequestData(
+                    llm=llm,
+                    prompt=prompt,
+                    stop_token_ids=stop_token_ids,
+                    image_data=[img],  # Dati immagine
+                    chat_template=None,
+                ),
+            })
+
+    return requests
+
 
 def load_phi3v(dataset):
     
@@ -162,12 +366,14 @@ def load_phi3v(dataset):
                 chat_template=None,
             )}
         )
-    
     return requests
 
 model_example_map = {
     "Phi-3.5-vision-instruct": load_phi3v,
     "Qwen2-VL-7B-Instruct": load_qwen2_vl,
+    "InternVL2_5-8B": load_intern,
+    "QVQ-72B-Preview-AWQ": load_qvq_72b,
+    
 }
 
 if __name__ == "__main__":
@@ -235,15 +441,18 @@ if __name__ == "__main__":
                 "image": req.image_data
             },
         } for req in batch_requests]
+        try:
+            outputs = req_data[0]['request'].llm.generate(
+                requests_in_batch,
+                sampling_params=sampling_params,
+                use_tqdm=False)
 
-        outputs = req_data[0]['request'].llm.generate(
-            requests_in_batch,
-            sampling_params=sampling_params,
-            use_tqdm=False)
-
-        for id_out, output in enumerate(outputs):
-            for out in output.outputs:
-                completion = out.text
-                with open(args.out_dir + f"/completions/multimodal/{model_name}/completions_{args.mode}_{eval_mode_str}.jsonl", 'a') as f:
-                    json.dump({"id": ids[id_out], "gold_answer": gold_answers[id_out], "final_answer": extract_answer(completion), "reasoning": completion}, f, ensure_ascii=False)
-                    f.write('\n')
+            for id_out, output in enumerate(outputs):
+                for out in output.outputs:
+                    completion = out.text
+                    with open(args.out_dir + f"/completions/multimodal/{model_name}/completions_{args.mode}_{eval_mode_str}.jsonl", 'a') as f:
+                        json.dump({"id": ids[id_out], "gold_answer": gold_answers[id_out], "final_answer": extract_answer(completion), "reasoning": completion}, f, ensure_ascii=False)
+                        f.write('\n')
+        except ValueError as e:
+            logger.error(f"Error during generation: {e}. Skipping this batch.")
+            continue
