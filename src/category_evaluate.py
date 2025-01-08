@@ -17,7 +17,6 @@ def main(file_path, dataset_name):
     df_hf = pd.DataFrame(dataset)
 
     merged_df = pd.merge(df_model, df_hf[['id', 'category']], on='id', how='left')
-    shape = merged_df.shape[0]
     
     os.makedirs("./out", exist_ok=True)
     model_name = file_path.split('/')[2] 
@@ -30,20 +29,23 @@ def main(file_path, dataset_name):
             f.write("### Models Category accuracy file ###\n")
 
     with open(out_path, 'a') as f:
-        if parts[4] == 'tir' or parts[4] == 'cot':
+        if parts[4] == 'tir' or parts[4] == 'cot' or parts[4] == 'vision':
             f.write(f"\n\nModel: {model_name}\nMode: {parts[3]}, {parts[4]}\n")
         else:
             f.write(f"\n\nModel: {model_name}\nMode: {parts[3]}\n")
         
+        yes_count = merged_df[merged_df['model_response'] == 'yes'].shape[0]
+        accuracy = yes_count / merged_df.shape[0]
+        accuracy_str = f"Global Accuracy: {accuracy:.2%}"   
+        f.write(accuracy_str + '\n')
+        
         for category in ['CE', 'C1', 'C2', 'L1', 'L2', 'GP', 'HC']:
             category_df = merged_df[merged_df['category'].str.contains(category, na=False)]
+            shape = category_df.shape[0]
             yes_count = category_df[category_df['model_response'] == 'yes'].shape[0]
             
-            if shape > 0:
-                accuracy = yes_count / shape
-                accuracy_str = f"{category} Category Accuracy: {accuracy:.2%}"
-            else:
-                accuracy_str = f"{category} Category Accuracy: No data available"
+            accuracy = yes_count / shape
+            accuracy_str = f"{category} Category Accuracy: {accuracy:.2%}"
             
             f.write(accuracy_str + '\n')
 
