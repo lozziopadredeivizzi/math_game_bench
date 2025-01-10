@@ -100,7 +100,7 @@ if __name__ == "__main__":
 
     HF_TOKEN = os.getenv("HF_TOKEN")
     login(token=HF_TOKEN)
-    
+
     # set up logging to file
     logging.basicConfig(level=logging.DEBUG,
                         datefmt="%m/%d/%Y %H:%M:%S",
@@ -114,6 +114,11 @@ if __name__ == "__main__":
     # parse input args
     parser = HfArgumentParser(ScriptArguments)
     args = parser.parse_args_into_dataclasses()[0]
+
+    if args.n_gpus > 1: 
+        import ray
+        ray.init(_temp_dir="/my_local_tmp_dir", log_to_driver=False)
+    
 
     if "gguf" not in args.model_name.lower():
         tokenizer = AutoTokenizer.from_pretrained(args.model_name)
@@ -164,7 +169,7 @@ if __name__ == "__main__":
             # tokenizer = "Qwen/Qwen2.5-Math-72B-Instruct",
             gpu_memory_utilization=.95,
             dtype="half" if "awq" in args.model_name.lower() else "auto",
-            quantization="awq" if "awq" in args.model_name.lower() else None,
+            quantization="awq_marlin" if "awq" in args.model_name.lower() else None,
             #download_dir=args.cache_dir,
             enforce_eager=True,
             max_model_len=args.max_model_len if args.max_model_len > 0 else None,
@@ -207,6 +212,12 @@ if __name__ == "__main__":
                     {"role": "user", "content": item['question'] + "\n\nYou are an expert programmer. Solve the above mathematical problem by writing a Python. Express your answer as a numeric type or a SymPy object."}
                 ]
                 
+        if "qwq" in args.model_name.lower():
+            messages = [
+                {"role": "system", "content": "You are a helpful and harmless assistant. You are Qwen developed by Alibaba. You should think step-by-step. Put your final answer within \\boxed{}."},
+                {"role": "user", "content": item['question']}
+            ]
+
         if "NuminaMath" in args.model_name:
             if args.mode == "cot":
                 messages = [
