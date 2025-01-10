@@ -3,25 +3,25 @@ This repository contains code for evaluating Large Language Models (LLMs) on Mat
 
 # Performances
 ## Without images (text-generation only)
-| Model                          | Method      | Pass@1 | Maj@8 | Easy (321 it) | Medium (615 it) | Hard (430 it) |
+| Model                          | Method      | Pass@1 | Maj@8 | Easy (525 it) | Medium (424 it) | Hard (430 it) |
 |--------------------------------|-------------|--------|-------|---------------|-----------------|---------------|
-| **Qwen2.5-Math-7B-Instruct**   | CoT         | 36.50% | -     | 39.88%        | 40.98%          | 26.74%        |
-|                                | TIR         | 42.19% | -     | 45.17%        | 44.39%          | 35.58%        |
-| **DeepSeek-Math-7B-Instruct**  | CoT         | 19.88% | -     | 20.25%        | 18.61%          | 21.13%        |
-|                                | TIR         | 13.61% | -     | 13.40%        | 18.21%          | 7.21%         |
-| **NumminaMath-7B-Instruct**    | CoT         | 25.41% | -     | 28.48%        | 23.09%          | 26.16%        |
-|                                | TIR         | 30.89% | -     | 36.76%        | 34.80%          | 20.00%        |
-| **MathStral-7B-Instruct**      | CoT         | 23.90% | -     | 23.05%        | 28.13%          | 17.67%        |
-| **ToRA-7B**                    | TIR         | 11.02% | -     | 9.66%         | 13.98%          | 7.91%         |
-| **GPT-4**                      | CoT         | 42.80% | -     | 43.92%        | 49.29%          | 33.41%        |  
-| **Qwen2.5-Math-7B-Instruct**   | CoT         | -      | 39.52%| 44,86%        | 45,20%          | 29,06%        |
-|                                | TIR         | -      | 44.68%| 69.02%        | 38.83%          | 45.05%        |
-| **DeepSeek-Math-7B-Instruct**  | CoT         | -      | 19,51%| 14,81%        | 21,43%          | 20,21%        |
-|                                | TIR         | -      | 20.09%| 20.56%        | 24.39%          | 13.26%        |
-| **NumminaMath-7B-Instruct**    | CoT         | -      | 25.12%| 24.66%        | 26.42%          | 23.89%        |
-|                                | TIR         | -      | 36.93%| 41.55%        | 41.86%          | 27.25%        |
-| **MathStral-7B-Instruct**      | CoT         | -      | 24.26%| 23.99%        | 30.36%          | 16.35%        |
-| **ToRA-7B**                    | TIR         | -      | 11.46%| 11.21%        | 14.31%          | 7.23%         |
+| **Qwen2.5-Math-7B-Instruct**   | CoT         | 35.71% | -     | 44.30%        | 33.96%          | 26.74%        |
+|                                | TIR         | 42.84% | -     | 49.91%        | 40.57%          | 36.28%        |
+| **DeepSeek-Math-7B-Instruct**  | CoT         | 20.03% | -     | 20.16%        | 16.88%          | 22.33%        |
+|                                | TIR         | 13.89% | -     | 18.13%        | 15.09%          | 7.44%         |
+| **NumminaMath-7B-Instruct**    | CoT         | 24.98% | -     | 24.65%        | 25.19%          | 25.15%        |
+|                                | TIR         | 30.60% | -     | 38.13%        | 31.13%          | 20.70%        |
+| **MathStral-7B-Instruct**      | CoT         | 24.55% | -     | 31.96%        | 20.75%          | 19.07%        |
+| **ToRA-7B**                    | TIR         | 11.16% | -     | 12.15%        | 12.97%          | 8.14%         |
+| **GPT-4**                      | CoT         | 42.80% | -     | 50.10%        | 43.73%          | 33.41%        |  
+| **Qwen2.5-Math-7B-Instruct**   | CoT         | -      | 35.57%| 43.18%        | 38.44%          | 23.26%        |
+|                                | TIR         | -      | 46.06%| 51.21%        | 48.46%          | 37.30%        |
+| **DeepSeek-Math-7B-Instruct**  | CoT         | -      | 20.09%| 25.05%        | 21.23%          | 12.79%        |
+|                                | TIR         | -      | 20.16%| 24.49%        | 21.23%          | 13.72%        |
+| **NumminaMath-7B-Instruct**    | CoT         | -      | 25.05%| 33.08%        | 27.36%          | 12.79%        |
+|                                | TIR         | -      | 36.89%| 43.26%        | 38.68%          | 16.98%        |
+| **MathStral-7B-Instruct**      | CoT         | -      | 25.27%| 31.40%        | 25.94%          | 16.35%        |
+| **ToRA-7B**                    | TIR         | -      | 11.38%| 13.83%        | 12.97%          | 6.76%         |
 
 # Prerequisites 
 ### 1) Clone github repository (or pull request if already done)
