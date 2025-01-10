@@ -165,3 +165,7 @@ cython_debug/
 out*.txt
 example*.txt
 out/
+.Trash-0/
+fileJSONL/
+src/outputs/
+ngrok-stable-linux-amd64.zip
