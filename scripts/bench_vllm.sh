@@ -1,14 +1,16 @@
 python3 -m src.bench_vllm \
-    --model_name "Qwen/Qwen2.5-Math-7B-Instruct" \
-    --dataset_name "lozziopadredeivizzi/mathematic_games_dataset_en" \
+    --model_name casperhansen/qwq-32b-preview-awq \
+    --dataset_name "alecocc/mathematic_games_dataset_en_2024_def" \
     --out_dir "./out" \
     --max_samples -1 \
     --cache_dir None \
     --n_out_sequences 1 \
     --n_sampling 1 \
     --temperature 0 \
-    --top_p 0.8 \
-    --mode tir \
+    --top_p 1.0 \
+    --mode cot \
     --text_only True \
-    --n_gpus 1 \
-    --n_rounds 3 
+    --n_gpus 2 \
+    --n_rounds 3 \
+    --batch_size 2 \
+    --start_idx 24
