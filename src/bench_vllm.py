@@ -190,7 +190,7 @@ if __name__ == "__main__":
     prompts = []
     for i, item in enumerate(dataset):
         # currenlty only Qwen2.5-Math is handled. This part must be adapted for each LLM considered in our tests. Maybe a separate function in a utils folders might help.
-        if "Qwen2.5-Math" in args.model_name or "Mathstral" in args.model_name or "Llama" in args.model_name or "tora" in args.model_name:
+        if "Qwen2.5-Math" in args.model_name or "Mathstral" in args.model_name or "tora" in args.model_name:
             if args.mode == "cot":
                 messages = [
                     {"role": "system", "content": "Please reason step by step, and put your final answer within \\boxed{}."},
@@ -213,6 +213,12 @@ if __name__ == "__main__":
                 ]
                 
         if "qwq" in args.model_name.lower():
+            messages = [
+                {"role": "system", "content": "You are a helpful and harmless assistant. You are Qwen developed by Alibaba. You should think step-by-step. Put your final answer within \\boxed{}."},
+                {"role": "user", "content": item['question']}
+            ]
+            
+        if "phi" in args.model_name.lower():
             messages = [
                 {"role": "system", "content": "You are a helpful and harmless assistant. You are Qwen developed by Alibaba. You should think step-by-step. Put your final answer within \\boxed{}."},
                 {"role": "user", "content": item['question']}

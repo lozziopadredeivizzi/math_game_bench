@@ -170,6 +170,4 @@ The total number of tiles Carla used altogether, knowing that they are less than
 ```
 
 ### TODO
-- [ ] Adapt the script for multiple LLMs
 - [ ] Solve issue for >70B models such as QWEN 2.5 math with GGUF and 4bit bitsandbytes
-- [ ] Add supoort for Images

@@ -16,7 +16,7 @@ def main(file_path, dataset_name):
     dataset = load_dataset(dataset_name, split="train")
     df_hf = pd.DataFrame(dataset)
 
-    merged_df = pd.merge(df_model, df_hf[['id', 'category']], on='id', how='left')
+    merged_df = pd.merge(df_model, df_hf[['id', 'difficulty', 'category']], on='id', how='left')
     
     os.makedirs("./out", exist_ok=True)
     model_name = file_path.split('/')[2] 
@@ -37,6 +37,33 @@ def main(file_path, dataset_name):
         yes_count = merged_df[merged_df['model_response'] == 'yes'].shape[0]
         accuracy = yes_count / merged_df.shape[0]
         accuracy_str = f"Global Accuracy: {accuracy:.2%}"   
+        f.write(accuracy_str + '\n')
+        
+        easy_df= merged_df[merged_df['difficulty'] == 'easy']
+        shape = easy_df.shape[0]
+        yes_count = easy_df[easy_df['model_response'] == 'yes'].shape[0]
+        
+        accuracy = yes_count / shape
+        accuracy_str = f"Easy Difficulty Accuracy: {accuracy:.2%}"
+        
+        f.write(accuracy_str + '\n')
+        
+        medium_df= merged_df[merged_df['difficulty'] == 'medium']
+        shape = medium_df.shape[0]
+        yes_count = medium_df[medium_df['model_response'] == 'yes'].shape[0]
+        
+        accuracy = yes_count / shape
+        accuracy_str = f"Medium Difficulty Accuracy: {accuracy:.2%}"
+        
+        f.write(accuracy_str + '\n')
+        
+        hard_df= merged_df[merged_df['difficulty'] == 'hard']
+        shape = hard_df.shape[0]
+        yes_count = hard_df[hard_df['model_response'] == 'yes'].shape[0]
+        
+        accuracy = yes_count / shape
+        accuracy_str = f"Hard Difficulty Accuracy: {accuracy:.2%}"
+        
         f.write(accuracy_str + '\n')
         
         for category in ['CE', 'C1', 'C2', 'L1', 'L2', 'GP', 'HC']:
