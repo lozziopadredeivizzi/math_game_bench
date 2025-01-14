@@ -88,6 +88,8 @@ def load_qwen2_vl(dataset, model_name):
     img_example = dataset['image'][id_example]
     question_example = dataset['question'][id_example]
     reasoning_example = "To determine the number of different types of Trebon that can be made by changing the order of the three layers, we need to consider the permutations of the three different layers.\n\nThe three layers are:\n1. Strawberry\n2. Apple\n3. Raspberry\n\nWe can arrange these three layers in different orders. The number of permutations of three distinct items is given by the formula for permutations of n items, which is n! (n factorial).\n\nFor three items, the number of permutations is:\n3! = 3 × 2 × 1 = 6\n\nSo, there are 6 different types of Trebon that can be made by changing the order of the three layers. The answer is:\n\\boxed{6}"
+    processor = AutoProcessor.from_pretrained(model_name)
+    
     for k, item in enumerate(dataset):
         if k!= id_example:
             img = item['image']
@@ -133,8 +135,6 @@ def load_qwen2_vl(dataset, model_name):
             ]
             
 
-            processor = AutoProcessor.from_pretrained(model_name)
-
             prompt = processor.apply_chat_template(messages,
                                                 tokenize=False,
                                                 add_generation_prompt=True)
@@ -168,21 +168,23 @@ def load_qvq_72b(dataset, model_name):
         model=model_name,
         max_model_len=4096,
         #max_num_seqs=5,
-        limit_mm_per_prompt={"image": 2},
+        limit_mm_per_prompt={"image": 1},
     )
+    processor = AutoProcessor.from_pretrained(model_name)
 
     requests = []
-    id_example = 3
-    img_example = dataset['image'][id_example]
-    question_example = dataset['question'][id_example]
+    #id_example = 3
+    #img_example = dataset['image'][id_example]
+    #question_example = dataset['question'][id_example]
     reasoning_example = "To determine the number of different types of Trebon that can be made by changing the order of the three layers, we need to consider the permutations of the three different layers.\n\nThe three layers are:\n1. Strawberry\n2. Apple\n3. Raspberry\n\nWe can arrange these three layers in different orders. The number of permutations of three distinct items is given by the formula for permutations of n items, which is n! (n factorial).\n\nFor three items, the number of permutations is:\n3! = 3 × 2 × 1 = 6\n\nSo, there are 6 different types of Trebon that can be made by changing the order of the three layers. The final answer is \\boxed{6}."
+    
     for k, item in enumerate(dataset):
-        if k!= id_example:
+        #if k!= id_example:
             img = item['image']
             question = item['question']
 
             placeholders = [{"type": "image", "image": img}]
-            placeholders_example = [{"type": "image", "image": img_example}]
+            #placeholders_example = [{"type": "image", "image": img_example}]
             messages = [
             {
                 "role": "system",
@@ -222,7 +224,7 @@ def load_qvq_72b(dataset, model_name):
             # }]
             
 
-            processor = AutoProcessor.from_pretrained(model_name)
+            
 
             prompt = processor.apply_chat_template(messages,
                                                 tokenize=False,
@@ -268,6 +270,9 @@ def load_intern(dataset, model_name):
         "For three items, the number of permutations is:\n3! = 3 × 2 × 1 = 6\n\n"
         "So, there are 6 different types of Trebon that can be made by changing the order of the three layers. The answer is:\n\\boxed{6}"
     )
+    
+    # Processore per il modello
+    processor = AutoProcessor.from_pretrained(model_name, trust_remote_code=True)
 
     for k, item in enumerate(dataset):
         if k != id_example:
@@ -309,9 +314,6 @@ def load_intern(dataset, model_name):
                     ),
                 },
             ]
-
-            # Processore per il modello
-            processor = AutoProcessor.from_pretrained(model_name, trust_remote_code=True)
 
             # Creazione del prompt
             prompt = processor.apply_chat_template(
@@ -408,7 +410,9 @@ if __name__ == "__main__":
     if args.start_idx > 0 and args.max_samples < 0: # to use for debug
         dataset = dataset.select(range(args.start_idx, len(dataset)))
 
+    print("PREPARING REQUESTS...")
     req_data = model_example_map[args.model_name.split("/")[-1]](dataset, args.model_name)
+    print("DONE!")
 
     sampling_params = SamplingParams(
         n=args.n_out_sequences,
