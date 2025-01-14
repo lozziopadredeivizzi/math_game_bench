@@ -64,7 +64,7 @@ def extract_answer(text):
     end = text.rfind("}")
     return text[:end] if start >= 0 and end >= 0 else ""
 
-def load_qwen2_vl(dataset):
+def load_qwen2_vl(dataset, model_name):
     try:
         from qwen_vl_utils import process_vision_info
     except ModuleNotFoundError:
@@ -73,7 +73,7 @@ def load_qwen2_vl(dataset):
               '`pip install qwen-vl-utils`.')
         process_vision_info = None
 
-    model_name = "Qwen/Qwen2-VL-7B-Instruct"
+    #model_name = "Qwen/Qwen2-VL-7B-Instruct" # "Qwen/Qwen2-VL-72B-Instruct-AWQ"
 
     # Tested on L40
     llm = LLM(
@@ -160,9 +160,9 @@ def load_qwen2_vl(dataset):
 
     return requests
 
-def load_qvq_72b(dataset):
-    model_name = "kosbu/QVQ-72B-Preview-AWQ"
-
+def load_qvq_72b(dataset, model_name):
+    #model_name = "kosbu/QVQ-72B-Preview-AWQ"
+    from qwen_vl_utils import process_vision_info
     # Tested on L40
     llm = LLM(
         model=model_name,
@@ -175,7 +175,7 @@ def load_qvq_72b(dataset):
     id_example = 3
     img_example = dataset['image'][id_example]
     question_example = dataset['question'][id_example]
-    reasoning_example = "To determine the number of different types of Trebon that can be made by changing the order of the three layers, we need to consider the permutations of the three different layers.\n\nThe three layers are:\n1. Strawberry\n2. Apple\n3. Raspberry\n\nWe can arrange these three layers in different orders. The number of permutations of three distinct items is given by the formula for permutations of n items, which is n! (n factorial).\n\nFor three items, the number of permutations is:\n3! = 3 × 2 × 1 = 6\n\nSo, there are 6 different types of Trebon that can be made by changing the order of the three layers. The answer is:\n\\boxed{6}"
+    reasoning_example = "To determine the number of different types of Trebon that can be made by changing the order of the three layers, we need to consider the permutations of the three different layers.\n\nThe three layers are:\n1. Strawberry\n2. Apple\n3. Raspberry\n\nWe can arrange these three layers in different orders. The number of permutations of three distinct items is given by the formula for permutations of n items, which is n! (n factorial).\n\nFor three items, the number of permutations is:\n3! = 3 × 2 × 1 = 6\n\nSo, there are 6 different types of Trebon that can be made by changing the order of the three layers. The final answer is \\boxed{6}."
     for k, item in enumerate(dataset):
         if k!= id_example:
             img = item['image']
@@ -183,42 +183,43 @@ def load_qvq_72b(dataset):
 
             placeholders = [{"type": "image", "image": img}]
             placeholders_example = [{"type": "image", "image": img_example}]
-            messages = [{
+            messages = [
+            {
                 "role": "system",
-                "content": "You are a mathematical expert. Solve the given problem by reasoning step by step. Please, for the validity of the answer, enclose your final answer within \\boxed{{}}."
-            }, {
-                "role":
-                "user",
-                "content": [
-                    *placeholders_example,
-                    {
-                        "type": "text",
-                        "text": f"Problem: {question_example.strip()}\n\nLet's think step by step. Remember to enclose your final answer within \\boxed{{}}."
-                    },
-                ],
-                    },
-                    {
-                "role":
-                "assistant",
-                "content": [
-                    {
-                        "type": "text",
-                        "text": f"{reasoning_example}"
-                    },
-                ],
-            },
-                    {
+                "content": "You are a helpful and harmless assistant. You are Qwen developed by Alibaba. Solve the given problem by thinking step-by-step. Please, ensure to enclose your final answer within \\boxed{}."
+            }, 
+            {
                 "role":
                 "user",
                 "content": [
                     *placeholders,
                     {
                         "type": "text",
-                        "text": f"Yes, that's correct! Now solve this new problem.\n\nProblem: {question.strip()}\n\nLet's think step by step. Remember to enclose your final answer within \\boxed{{}}."
+                        "text": f"Problem: {question.strip()}"
                     },
                 ],
-                    }
-            ]
+            },]
+            # {
+            #     "role":
+            #     "assistant",
+            #     "content": [
+            #         {
+            #             "type": "text",
+            #             "text": f"{reasoning_example}"
+            #         },
+            #     ],
+            # },
+            # {
+            #     "role":
+            #     "user",
+            #     "content": [
+            #         *placeholders,
+            #         {
+            #             "type": "text",
+            #             "text": f"Yes, that's correct! Now solve this new problem.\n\nProblem: {question.strip()}"
+            #         },
+            #     ],
+            # }]
             
 
             processor = AutoProcessor.from_pretrained(model_name)
@@ -228,6 +229,7 @@ def load_qvq_72b(dataset):
                                                 add_generation_prompt=True)
 
             stop_token_ids = None
+            image_data, _ = process_vision_info(messages)
 
             requests.append({
                 "id": item['id'], 
@@ -236,15 +238,15 @@ def load_qvq_72b(dataset):
                     llm=llm,
                     prompt=prompt,
                     stop_token_ids=stop_token_ids,
-                    image_data=[img],
+                    image_data=image_data,
                     chat_template=None,
                 )}
             )
 
     return requests
 
-def load_intern(dataset):
-    model_name = "OpenGVLab/InternVL2_5-8B"
+def load_intern(dataset, model_name):
+    #model_name = "OpenGVLab/InternVL2_5-8B"
 
     # Configurazione del modello LLM
     llm = LLM(
@@ -282,7 +284,7 @@ def load_intern(dataset):
                     "role": "system",
                     "content": (
                         "You are a mathematical expert. Solve the given problem by reasoning step by step. "
-                        "Please, for the validity of the answer, enclose your final answer within \\boxed{{}}."
+                        "Please, for the validity of the answer, enclose your final answer within \\boxed{}."
                     ),
                 },
                 {
@@ -290,7 +292,7 @@ def load_intern(dataset):
                     "content": (
                         f"{placeholders_example}\n\n"
                         f"Problem: {question_example.strip()}\n\n"
-                        "Let's think step by step. Remember to enclose your final answer within \\boxed{{}}."
+                        "Let's think step by step. Remember to enclose your final answer within \\boxed{}."
                     ),
                 },
                 {
@@ -303,7 +305,7 @@ def load_intern(dataset):
                         f"{placeholders}\n\n"
                         f"Yes, that's correct! Now solve this new problem.\n\n"
                         f"Problem: {question.strip()}\n\n"
-                        "Let's think step by step. Remember to enclose your final answer within \\boxed{{}}."
+                        "Let's think step by step. Remember to enclose your final answer within \\boxed{}."
                     ),
                 },
             ]
@@ -336,10 +338,10 @@ def load_intern(dataset):
     return requests
 
 
-def load_phi3v(dataset):
-    
+def load_phi3v(dataset, model_name):
+    # model_name = "microsoft/Phi-3.5-vision-instruct
     llm = LLM(
-        model="microsoft/Phi-3.5-vision-instruct",
+        model=model_name,
         trust_remote_code=True,
         max_model_len=4096,
         limit_mm_per_prompt={"image": 1},
@@ -371,6 +373,7 @@ def load_phi3v(dataset):
 model_example_map = {
     "Phi-3.5-vision-instruct": load_phi3v,
     "Qwen2-VL-7B-Instruct": load_qwen2_vl,
+    "Qwen2-VL-72B-Instruct-AWQ": load_qwen2_vl,
     "InternVL2_5-8B": load_intern,
     "QVQ-72B-Preview-AWQ": load_qvq_72b,
     
@@ -405,13 +408,13 @@ if __name__ == "__main__":
     if args.start_idx > 0 and args.max_samples < 0: # to use for debug
         dataset = dataset.select(range(args.start_idx, len(dataset)))
 
-    req_data = model_example_map[args.model_name.split("/")[-1]](dataset)
+    req_data = model_example_map[args.model_name.split("/")[-1]](dataset, args.model_name)
 
     sampling_params = SamplingParams(
         n=args.n_out_sequences,
         temperature=args.temperature,
         top_p = args.top_p,
-        max_tokens=2048,
+        max_tokens=4096,#2048,
         stop_token_ids=req_data[0]['request'].stop_token_ids,
         seed=0)
 
