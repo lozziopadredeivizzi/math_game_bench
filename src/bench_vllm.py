@@ -196,6 +196,8 @@ if __name__ == "__main__":
     
 
     prompts = []
+    question_example = dataset["question"][0]
+    reasoning_example = "To find Amerigo's age when Renato is ten times as old as he is now, we need to follow these steps:\n\n1. First, let's find the current age difference between Renato and Amerigo. \n   Since Amerigo is two years younger than Renato, and Renato is 6 years old, Amerigo is 6 - 2 = 4 years old.\n\n2. Next, let's find out how many years it will take for Renato to be ten times his current age. \n   Renato is currently 6 years old. Ten times his current age is 10 * 6 = 60 years. \n   So, it will take 60 - 6 = 54 years for Renato to be ten times his current age.\n\n3. Now, let's calculate Amerigo's age when Renato is ten times his current age. \n   Since it will take 54 years for Renato to be ten times his current age, Amerigo will also age 54 years. \n   Amerigo's current age is 4 years, so in 54 years, Amerigo will be 4 + 54 = 58 years old.\n\nTherefore, when Renato is ten times as old as he is now, Amerigo will be 58 years old.\n\n\\boxed{58}"
     for i, item in enumerate(dataset):
         # currenlty only Qwen2.5-Math is handled. This part must be adapted for each LLM considered in our tests. Maybe a separate function in a utils folders might help.
         if "Qwen2.5" in args.model_name or "Mathstral" in args.model_name or "tora" in args.model_name:
@@ -225,6 +227,27 @@ if __name__ == "__main__":
                 {"role": "system", "content": "You are a helpful and harmless assistant. You are Qwen developed by Alibaba. You should think step-by-step. Put your final answer within \\boxed{}."},
                 {"role": "user", "content": item['question']}
             ]
+            
+        if "Llama" in args.model_name:
+            messages = [
+                {
+                    "role": "system",
+                    "content": "You are a mathematical expert. Solve the given problem by reasoning step by step. Please, for the validity of the answer, enclose your final answer within \\boxed{}."
+                },
+                {
+                    "role": "user",
+                    "content": f"Example Problem: {question_example.strip()}\n\nLet's think step by step. Remember to enclose your final answer within \\boxed{{}}."
+                },
+                {
+                    "role": "assistant",
+                    "content": reasoning_example.strip()
+                },
+                {
+                    "role": "user",
+                    "content": f"Yes, that's correct! Now solve this new problem.\n\nProblem: {item['question'].strip()} \n\nLet's think step by step. Remember to enclose your final answer within \\boxed{{}}."
+                }
+            ]
+
             
         if "phi" in args.model_name.lower():
             messages = [
