@@ -165,7 +165,6 @@ def load_qwen2_vl(dataset, model_name):
 
 def load_qvq_72b(dataset, model_name):
     #model_name = "kosbu/QVQ-72B-Preview-AWQ"
-    from qwen_vl_utils import process_vision_info
     # Tested on L40
     llm = LLM(
         model=model_name,
@@ -191,7 +190,7 @@ def load_qvq_72b(dataset, model_name):
             messages = [
             {
                 "role": "system",
-                "content": "You are a helpful and harmless assistant. You are Qwen developed by Alibaba. Solve the given problem by thinking step-by-step. Please, ensure to enclose your final answer within \\boxed{}."
+                "content": "You are a helpful and harmless assistant. Solve the given problem by thinking step-by-step. Please, ensure to enclose your final answer within \\boxed{}."
             }, 
             {
                 "role":
@@ -257,88 +256,88 @@ def load_intern(dataset, model_name):
     llm = LLM(
         model=model_name,
         max_model_len=4096,
-        limit_mm_per_prompt={"image": 2},
+        limit_mm_per_prompt={"image": 1},
         trust_remote_code=True,
     )
 
     requests = []
     id_example = 3
-    img_example = dataset['image'][id_example]
-    question_example = dataset['question'][id_example]
-    reasoning_example = (
-        "To determine the number of different types of Trebon that can be made by changing the order of the three layers, "
-        "we need to consider the permutations of the three different layers.\n\n"
-        "The three layers are:\n1. Strawberry\n2. Apple\n3. Raspberry\n\n"
-        "We can arrange these three layers in different orders. The number of permutations of three distinct items is given by the formula for permutations of n items, which is n! (n factorial).\n\n"
-        "For three items, the number of permutations is:\n3! = 3 × 2 × 1 = 6\n\n"
-        "So, there are 6 different types of Trebon that can be made by changing the order of the three layers. The answer is:\n\\boxed{6}"
-    )
+    #img_example = dataset['image'][id_example]
+    #question_example = dataset['question'][id_example]
+    #reasoning_example = (
+    #    "To determine the number of different types of Trebon that can be made by changing the order of the three layers, "
+    #    "we need to consider the permutations of the three different layers.\n\n"
+    #    "The three layers are:\n1. Strawberry\n2. Apple\n3. Raspberry\n\n"
+    #    "We can arrange these three layers in different orders. The number of permutations of three distinct items is given by the formula for permutations of n items, which is n! (n factorial).\n\n"
+    #    "For three items, the number of permutations is:\n3! = 3 × 2 × 1 = 6\n\n"
+    #    "So, there are 6 different types of Trebon that can be made by changing the order of the three layers. The answer is:\n\\boxed{6}"
+    #)
     
     # Processore per il modello
     processor = AutoProcessor.from_pretrained(model_name, trust_remote_code=True)
 
     for k, item in enumerate(dataset):
-        if k != id_example:
-            img = item['image']
-            question = item['question']
+        img = item['image']
+        question = item['question']
 
             # Placeholder per immagine di esempio
-            placeholders_example = f"[Image: {img_example}]"
-            placeholders = f"[Image: {img}]"
+           # placeholders_example = f"[Image: {img_example}]"
+        placeholders = f"Image: <image>\n"
 
             # Costruzione dei messaggi
-            messages = [
-                {
-                    "role": "system",
-                    "content": (
-                        "You are a mathematical expert. Solve the given problem by reasoning step by step. "
-                        "Please, for the validity of the answer, enclose your final answer within \\boxed{}."
-                    ),
-                },
-                {
-                    "role": "user",
-                    "content": (
-                        f"{placeholders_example}\n\n"
-                        f"Problem: {question_example.strip()}\n\n"
-                        "Let's think step by step. Remember to enclose your final answer within \\boxed{}."
-                    ),
-                },
-                {
-                    "role": "assistant",
-                    "content": reasoning_example,
-                },
-                {
-                    "role": "user",
-                    "content": (
-                        f"{placeholders}\n\n"
-                        f"Yes, that's correct! Now solve this new problem.\n\n"
-                        f"Problem: {question.strip()}\n\n"
-                        "Let's think step by step. Remember to enclose your final answer within \\boxed{}."
-                    ),
-                },
-            ]
+        messages = [
+            {
+            "role": "user",
+            "content": f"{placeholders}\n"
+                    f"You are a mathematical expert. Solve the given problem by reasoning step by step. "
+                    f"Problem: {question.strip()}.\n\n"
+                            "Please, for the validity of the answer, enclose your final answer within \\boxed{{}}."
+            },
+        ]
+               # {
+               #     "role": "user",
+               #     "content": (
+               #         f"{placeholders_example}\n\n"
+               #         f"Problem: {question_example.strip()}\n\n"
+               #         "Let's think step by step. Remember to enclose your final answer within \\boxed{}."
+               #     ),
+               # },
+               # {
+               #     "role": "assistant",
+               #     "content": reasoning_example,
+               # },
+               # {
+               #     "role": "user",
+               #     "content": (
+               #         f"{placeholders}\n\n"
+               #         f"Yes, that's correct! Now solve this new problem.\n\n"
+               #         f"Problem: {question.strip()}\n\n"
+               #         "Let's think step by step. Remember to enclose your final answer within \\boxed{}."
+               #     ),
+               # },
+          #  ]
 
             # Creazione del prompt
-            prompt = processor.apply_chat_template(
-                messages,
-                tokenize=False,
-                add_generation_prompt=True,
-            )
+        prompt = processor.apply_chat_template(
+            messages,
+            tokenize=False,
+            add_generation_prompt=True,
+        )
 
-            stop_token_ids = None
+        stop_token_ids = None
 
             # Aggiunta alla lista di richieste
-            requests.append({
-                "id": item['id'],
-                "answer": item['answer'],
-                "request": ModelRequestData(
-                    llm=llm,
-                    prompt=prompt,
-                    stop_token_ids=stop_token_ids,
-                    image_data=[img],  # Dati immagine
-                    chat_template=None,
-                ),
-            })
+        requests.append({
+            "id": item['id'],
+            "answer": item['answer'],
+            "request": ModelRequestData(
+                llm=llm,
+                prompt=prompt,
+                stop_token_ids=stop_token_ids,
+                image_data=[img],  # Dati immagine
+                chat_template=None,
+            ),
+        })
 
     return requests
 
