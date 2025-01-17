@@ -50,6 +50,8 @@ class ScriptArguments:
     n_rounds: Optional[int] = field(default=3, metadata={"help": "Number of gpus to use for inference."})
     gguf_filename: Optional[str] = field(default='', metadata={"help": "gguf filename to download from HuggingFace"})
     original_model_name: Optional[str] = field(default='', metadata={"help": "orginal name of the model gguf quantized. es "})
+    id_problems: Optional[str] = field(default="", metadata={"help": "specific ids of problems to consider for inference. The input should be a list of numbers like this: 1,5,6,8..."})
+
 
 class ModelRequestData(NamedTuple):
     llm: LLM
@@ -440,6 +442,11 @@ if __name__ == "__main__":
     
     dataset = dataset.filter(lambda example: example['image'] != None)
     
+    if args.id_problems: 
+        ids_to_consider = args.id_problems.split(",")
+        ids_to_consider = [int(el) for el in ids_to_consider]
+        dataset = dataset.filter(lambda example: example['id'] in ids_to_consider)
+
     if args.max_samples > 0: # to use for debug
         dataset = dataset.select(range(args.start_idx, args.max_samples))
     
@@ -463,13 +470,14 @@ if __name__ == "__main__":
 
     if args.start_idx_batch:
         batches = batches[args.start_idx_batch:]
-        
+
     model_name = args.model_name.split("/")[-1]
     os.makedirs(args.out_dir + f"/completions/multimodal/{model_name}", exist_ok=True)
     eval_mode_str = "pass_1" if args.n_out_sequences == 1 else f"maj_{args.n_out_sequences}"
 
     with open(args.out_dir + f'/prompts/{model_name}_example_prompts.txt', 'w') as f:
-        for i in range(5):
+        range_to_print = min(len(dataset), 5)
+        for i in range(range_to_print):
             prompt = req_data[i]['request'].prompt
             f.write(f"ID: {req_data[i]['id']}\n")
             f.write(prompt)
