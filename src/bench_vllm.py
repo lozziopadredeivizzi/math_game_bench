@@ -48,7 +48,9 @@ class ScriptArguments:
     n_rounds: Optional[int] = field(default=3, metadata={"help": "Number of gpus to use for inference."})
     gguf_filename: Optional[str] = field(default='', metadata={"help": "gguf filename to download from HuggingFace"})
     original_model_name: Optional[str] = field(default='', metadata={"help": "orginal name of the model gguf quantized. es "})
-    
+    max_tokens_cot: Optional[int] = field(default=2048, metadata={"help": "max number of tokens to generate in CoT prompting."})
+    max_tokens_tir: Optional[int] = field(default=1024, metadata={"help": "max number of tokens to generate in TIR prompting."})
+    id_problems: Optional[str] = field(default="", metadata={"help": "specific ids of problems to consider for inference. The input should be a list of numbers like this: 1,5,6,8..."})
 
 # Define the target function at the top level so it can be pickled
 def target_function(queue, code):
@@ -145,14 +147,14 @@ if __name__ == "__main__":
         n=args.n_out_sequences, 
         temperature=args.temperature, 
         top_p=args.top_p, 
-        max_tokens=2048 if args.mode == "cot" else 1024, 
+        max_tokens=args.max_tokens_cot if args.mode == "cot" else args.max_tokens_tir, 
         stop=terminators,
-        seed=None
+        seed=0
     )
 
     # Qwen2.5-Math-72B-Instruct-Q4_K_M.gguf
     if "gguf" in args.model_name.lower():
-        gguf_model = hf_hub_download(args.model_name, filename=args.gguf_filename, cache_dir="./models_cache")
+        gguf_model = hf_hub_download(args.model_name, filename=args.gguf_filename) # to store in cache --> cache_dir="./models_cache"
 
     if "4bit" in args.model_name.lower():
         # bitsandbytes 4 bit quantization 
@@ -166,7 +168,7 @@ if __name__ == "__main__":
     else:
         llm = LLM(
             model=args.model_name if "gguf" not in args.model_name.lower() else gguf_model,
-            # tokenizer = "Qwen/Qwen2.5-Math-72B-Instruct",
+            tokenizer=args.original_model_name if "gguf" in args.model_name.lower() else args.model_name,
             gpu_memory_utilization=.95,
             dtype="half" if "awq" in args.model_name.lower() else "auto",
             quantization="awq_marlin" if "awq" in args.model_name.lower() else None,
@@ -180,17 +182,23 @@ if __name__ == "__main__":
     dataset = load_dataset(args.dataset_name, split="train")
     if args.text_only: # to use to ignore images from data
         dataset = dataset.filter(lambda example: example['image'] == None)
+
+    if args.id_problems: 
+        ids_to_consider = args.id_problems.split(",")
+        ids_to_consider = [int(el) for el in ids_to_consider]
+        dataset = dataset.filter(lambda example: example['id'] in ids_to_consider)
     
     if args.max_samples > 0: # to use for debug
         dataset = dataset.select(range(args.start_idx, args.max_samples))
     
     if args.start_idx > 0 and args.max_samples < 0: # to use for debug
         dataset = dataset.select(range(args.start_idx, len(dataset)))
+    
 
     prompts = []
     for i, item in enumerate(dataset):
         # currenlty only Qwen2.5-Math is handled. This part must be adapted for each LLM considered in our tests. Maybe a separate function in a utils folders might help.
-        if "Qwen2.5-Math" in args.model_name or "Mathstral" in args.model_name or "tora" in args.model_name:
+        if "Qwen2.5" in args.model_name or "Mathstral" in args.model_name or "tora" in args.model_name:
             if args.mode == "cot":
                 messages = [
                     {"role": "system", "content": "Please reason step by step, and put your final answer within \\boxed{}."},
@@ -220,7 +228,7 @@ if __name__ == "__main__":
             
         if "phi" in args.model_name.lower():
             messages = [
-                {"role": "system", "content": "You are a helpful and harmless assistant. You are Qwen developed by Alibaba. You should think step-by-step. Put your final answer within \\boxed{}."},
+                {"role": "system", "content": "You are a helpful and harmless assistant. You should think step-by-step. Put your final answer within \\boxed{}."},
                 {"role": "user", "content": item['question']}
             ]
 
