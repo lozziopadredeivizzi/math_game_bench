@@ -188,7 +188,7 @@ def load_qvq_72b(dataset, model_name):
             messages = [
             {
                 "role": "system",
-                "content": "You are a helpful and harmless assistant. You are Qwen developed by Alibaba. Solve the given problem by thinking step-by-step. Please, ensure to enclose your final answer within \\boxed{}."
+                "content": "You are a helpful and harmless assistant. Solve the given problem by thinking step-by-step. Please, ensure to enclose your final answer within \\boxed{}."
             }, 
             {
                 "role":

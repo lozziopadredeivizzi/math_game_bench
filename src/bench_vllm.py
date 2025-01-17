@@ -228,27 +228,8 @@ if __name__ == "__main__":
                 {"role": "user", "content": item['question']}
             ]
             
-        if "Llama" in args.model_name:
-            messages = [
-                {
-                    "role": "system",
-                    "content": "You are a mathematical expert. Solve the given problem by reasoning step by step. Please, for the validity of the answer, enclose your final answer within \\boxed{}."
-                },
-                {
-                    "role": "user",
-                    "content": f"Example Problem: {question_example.strip()}\n\nLet's think step by step. Remember to enclose your final answer within \\boxed{{}}."
-                },
-                {
-                    "role": "assistant",
-                    "content": reasoning_example.strip()
-                },
-                {
-                    "role": "user",
-                    "content": f"Yes, that's correct! Now solve this new problem.\n\nProblem: {item['question'].strip()} \n\nLet's think step by step. Remember to enclose your final answer within \\boxed{{}}."
-                }
-            ]
             
-        if "llama" in args.model_name:
+        if "llama" in args.model_name.lower():
             messages = [
                 {
                     "role": "system", "content": "You are a mathematical expert. Solve the given problem by reasoning step by step. Please, for the validity of the answer, enclose your final answer within \\boxed{}."
