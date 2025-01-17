@@ -36,6 +36,7 @@ class ScriptArguments:
     out_dir: Optional[str] =  field(default="./out", metadata={"help": "outputs directory"})
     max_samples: Optional[int] = field(default=-1, metadata={"help": "Maximum number of data to process in train set. Default is -1 to process all data."})
     start_idx: Optional[int] = field(default=0, metadata={"help": "Index of first prompt to process."})
+    start_idx_batch: Optional[int] = field(default=0, metadata={"help": "Index of first batch to process."})
     batch_size: Optional[int] = field(default=16, metadata={"help": "Maximum number of data to process per batch."})
     cache_dir: Optional[str] =  field(default=None, metadata={"help": "cache dir to store model weights"})
     max_model_len: Optional[int] = field(default=-1, metadata={"help": "Maximum input sequence length"})
@@ -339,6 +340,41 @@ def load_intern(dataset, model_name):
 
     return requests
 
+def load_pixtral_hf(dataset, model_name="mistral-community/pixtral-12b"):
+
+    # Adjust this as necessary to fit in GPU
+    llm = LLM(
+        model=model_name,
+        max_model_len=args.max_model_len,
+        #max_num_seqs=2,
+        tensor_parallel_size=args.n_gpus,
+        limit_mm_per_prompt={"image": 1},
+    )
+
+    requests = []
+    for k, item in enumerate(dataset):
+
+        img = item['image']
+        question = item['question']
+
+        placeholders = "[IMG]"
+        prompt = f"<s>[INST]You are a mathematical expert. Solve the given problem by reasoning step by step. Put your final answer within \\boxed{{}}.\n\nProblem:{question}\n{placeholders}[/INST]"
+        stop_token_ids = None
+
+        requests.append({
+            "id": item['id'], 
+            "answer": item['answer'],
+            "request": ModelRequestData(
+                llm=llm,
+                prompt=prompt,
+                stop_token_ids=stop_token_ids,
+                image_data=[img],
+                chat_template=None
+            )}
+        )
+
+    return requests
+
 
 def load_phi3v(dataset, model_name):
     # model_name = "microsoft/Phi-3.5-vision-instruct
@@ -378,7 +414,7 @@ model_example_map = {
     "Qwen2-VL-72B-Instruct-AWQ": load_qwen2_vl,
     "InternVL2_5-8B": load_intern,
     "QVQ-72B-Preview-AWQ": load_qvq_72b,
-    
+    "pixtral-12b": load_pixtral_hf
 }
 
 if __name__ == "__main__":
@@ -425,6 +461,9 @@ if __name__ == "__main__":
 
     batches = [req_data[i:i+args.batch_size] for i in range(0, len(req_data), args.batch_size)]
 
+    if args.start_idx_batch:
+        batches = batches[args.start_idx_batch:]
+        
     model_name = args.model_name.split("/")[-1]
     os.makedirs(args.out_dir + f"/completions/multimodal/{model_name}", exist_ok=True)
     eval_mode_str = "pass_1" if args.n_out_sequences == 1 else f"maj_{args.n_out_sequences}"
