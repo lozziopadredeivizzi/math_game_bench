@@ -165,6 +165,7 @@ def load_qwen2_vl(dataset, model_name):
 
 def load_qvq_72b(dataset, model_name):
     #model_name = "kosbu/QVQ-72B-Preview-AWQ"
+    from qwen_vl_utils import process_vision_info
     # Tested on L40
     llm = LLM(
         model=model_name,
@@ -258,6 +259,9 @@ def load_intern(dataset, model_name):
         max_model_len=4096,
         limit_mm_per_prompt={"image": 1},
         trust_remote_code=True,
+        enforce_eager=True,
+        gpu_memory_utilization=.95
+
     )
 
     requests = []
@@ -415,7 +419,8 @@ model_example_map = {
     "Qwen2-VL-72B-Instruct-AWQ": load_qwen2_vl,
     "InternVL2_5-8B": load_intern,
     "QVQ-72B-Preview-AWQ": load_qvq_72b,
-    "pixtral-12b": load_pixtral_hf
+    "pixtral-12b": load_pixtral_hf,
+    "InternVL2_5-38B-MPO": load_intern
 }
 
 if __name__ == "__main__":
@@ -462,7 +467,7 @@ if __name__ == "__main__":
         top_p = args.top_p,
         max_tokens=4096,#2048,
         stop_token_ids=req_data[0]['request'].stop_token_ids,
-        seed=0)
+        seed=None if args.n_out_sequences > 1 else 0)
 
 
     batches = [req_data[i:i+args.batch_size] for i in range(0, len(req_data), args.batch_size)]
