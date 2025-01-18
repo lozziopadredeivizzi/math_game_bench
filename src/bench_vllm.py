@@ -149,7 +149,7 @@ if __name__ == "__main__":
         top_p=args.top_p, 
         max_tokens=args.max_tokens_cot if args.mode == "cot" else args.max_tokens_tir, 
         stop=terminators,
-        seed=0
+        seed=None if (args.n_out_sequences > 1 and args.mode == "cot") or (args.n_sampling > 1 and args.mode == "tir") else 0
     )
 
     # Qwen2.5-Math-72B-Instruct-Q4_K_M.gguf
