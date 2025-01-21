@@ -200,7 +200,7 @@ if __name__ == "__main__":
     reasoning_example = "To find Amerigo's age when Renato is ten times as old as he is now, we need to follow these steps:\n\n1. First, let's find the current age difference between Renato and Amerigo. \n   Since Amerigo is two years younger than Renato, and Renato is 6 years old, Amerigo is 6 - 2 = 4 years old.\n\n2. Next, let's find out how many years it will take for Renato to be ten times his current age. \n   Renato is currently 6 years old. Ten times his current age is 10 * 6 = 60 years. \n   So, it will take 60 - 6 = 54 years for Renato to be ten times his current age.\n\n3. Now, let's calculate Amerigo's age when Renato is ten times his current age. \n   Since it will take 54 years for Renato to be ten times his current age, Amerigo will also age 54 years. \n   Amerigo's current age is 4 years, so in 54 years, Amerigo will be 4 + 54 = 58 years old.\n\nTherefore, when Renato is ten times as old as he is now, Amerigo will be 58 years old.\n\n\\boxed{58}"
     for i, item in enumerate(dataset):
         # currenlty only Qwen2.5-Math is handled. This part must be adapted for each LLM considered in our tests. Maybe a separate function in a utils folders might help.
-        if "Qwen2.5" in args.model_name or "Mathstral" in args.model_name or "tora" in args.model_name:
+        if "Qwen2.5" in args.model_name or "Mathstral" in args.model_name:
             if args.mode == "cot":
                 messages = [
                     {"role": "system", "content": "Please reason step by step, and put your final answer within \\boxed{}."},
@@ -221,6 +221,12 @@ if __name__ == "__main__":
                 messages = [
                     {"role": "user", "content": item['question'] + "\n\nYou are an expert programmer. Solve the above mathematical problem by writing a Python. Express your answer as a numeric type or a SymPy object."}
                 ]
+
+        if "DeepSeek-R1" in args.model_name:
+            messages = [
+                {"role": "system", "content": "You are a helpful and harmless assistant. You should think step-by-step."},#"Please reason step by step, and put your final answer within \\boxed{}."},
+                {"role": "user", "content": item['question']}
+            ]
                 
         if "qwq" in args.model_name.lower():
             messages = [
