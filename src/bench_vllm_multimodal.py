@@ -420,7 +420,8 @@ model_example_map = {
     "InternVL2_5-8B": load_intern,
     "QVQ-72B-Preview-AWQ": load_qvq_72b,
     "pixtral-12b": load_pixtral_hf,
-    "InternVL2_5-38B-MPO": load_intern
+    "InternVL2_5-38B-MPO": load_intern,
+    "InternVL2_5-38B": load_intern,
 }
 
 if __name__ == "__main__":
