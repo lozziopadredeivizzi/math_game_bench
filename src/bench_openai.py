@@ -21,11 +21,11 @@ from collections import Counter, defaultdict
 
 @dataclass
 class ScriptArguments:
-    model_name: Optional[str] = field(default="deepseek-chat", metadata={"help": "model's HF directory or local path"})
+    model_name: Optional[str] = field(default="deepseek-reasoner", metadata={"help": "model's HF directory or local path"})
     dataset_name: Optional[str] = field(default="alecocc/mathematic_games_dataset_en_2024_def")
     out_dir: Optional[str] =  field(default="./out", metadata={"help": "outputs directory"})
     max_samples: Optional[int] = field(default=-1, metadata={"help": "Maximum number of data to process in train set. Default is -1 to process all data."})
-    start_idx: Optional[int] = field(default=4, metadata={"help": "Index of first prompt to process."})
+    start_idx: Optional[int] = field(default=10, metadata={"help": "Index of first prompt to process."})
     top_p: Optional[float] = field(default=1.0, metadata={"help": "Top p sampling."})
     n_out_sequences: Optional[int] = field(default=1, metadata={"help": "Number of generated sequences per instance"})
     temperature: Optional[float] = field(default=0.0, metadata={"help": "Sampling temperature parameter"})
@@ -50,6 +50,21 @@ def make_completion(instruction):
             presence_penalty=0,
             stop=None,
             seed=42
+        )
+        
+        return response
+    except Exception as e:
+        print(e)
+        return ""
+
+def make_completion_deepseek_r(instruction):
+    try:
+        # Create a chat completion using the question and context
+        response = client.chat.completions.create(
+            model="deepseek-reasoner",
+            messages = [
+                {"role": "user", "content": f"Problem:\n{instruction}"}
+            ],
         )
         
         return response
@@ -99,7 +114,7 @@ if __name__ == "__main__":
             api_key=OPENAI_KEY
         )
 
-    MODEL_NAME = "deepseek-chat" if "deepseek" in args.model_name.lower() else args.model_name 
+    MODEL_NAME = args.model_name 
 
     dataset = load_dataset(args.dataset_name, split="train")
     if args.text_only: # to use to ignore images from data
@@ -117,16 +132,22 @@ if __name__ == "__main__":
         prompt = item['question']
         response = make_completion(prompt)
         completion = response.choices[0].message.content.strip()
+        if args.model_name  == "deepseek-reasoner":
+            reasoning_content = response.choices[0].message.reasoning_content.strip()
+
         model = response.model
-        usage = dict(response.usage)
+        usage = dict(response.usage) if args.model_name  != "deepseek-reasoner" else ""
         with open(f'out/completions/openai/completion_{MODEL_NAME}_cot.jsonl', 'a') as f:    
             result = {
                 "model": model,
                 "id": item['id'],
                 "gold_answer": item['answer'],
-                "final_answer": extract_answer(completion) if completion else "",
-                "reasoning": completion if completion else "",
+                "final_answer": extract_answer(completion),
+                "reasoning": reasoning_content if args.model_name  == "deepseek-reasoner" else completion,
                 "usage": usage if completion else {},
             }
+            if args.model_name  == "deepseek-reasoner":
+                result['answer'] = completion
+
             json.dump(result, f, ensure_ascii=False)
             f.write('\n')
