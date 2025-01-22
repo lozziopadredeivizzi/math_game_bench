@@ -23,11 +23,11 @@ from typing import Optional
 from dataclasses import dataclass, field
 
 
-# gpt-4o-mini-2024-07-18 # gpt-4o-2024-08-06 #gemini-1.5-pro #gemini-2.0-flash-exp
+# gpt-4o-mini-2024-07-18 # gpt-4o-2024-08-06 #gemini-1.5-pro #gemini-2.0-flash-exp #gemini-2.0-flash-thinking-exp
 
 @dataclass
 class ScriptArguments:
-    model_name: Optional[str] = field(default="gemini-1.5-flash", metadata={"help": "model's HF directory or local path"})
+    model_name: Optional[str] = field(default="gemini-2.0-flash-thinking-exp", metadata={"help": "model's HF directory or local path"})
     dataset_name: Optional[str] = field(default="alecocc/mathematic_games_dataset_en_2024_def")
     max_samples: Optional[int] = field(default=-1, metadata={"help": "Maximum number of data to process in train set. Default is -1 to process all data."})
     start_idx: Optional[int] = field(default=0, metadata={"help": "Index of first prompt to process."})
@@ -85,6 +85,10 @@ if __name__ == "__main__":
         from google import genai
         from google.genai import types
         client = genai.Client(api_key=GEMINI_API_KEY)
+    elif MODEL_NAME == "gemini-2.0-flash-thinking-exp":
+        from google import genai
+        from google.genai import types
+        client = genai.Client(api_key=GEMINI_API_KEY, http_options={'api_version':'v1alpha'})
     else:
         import google.generativeai as genai
         genai.configure(api_key=GEMINI_API_KEY)
@@ -136,6 +140,13 @@ if __name__ == "__main__":
                         top_p=args.top_p,
                         )
                     )
+                elif MODEL_NAME == "gemini-2.0-flash-thinking-exp":
+                    config = {'thinking_config': {'include_thoughts': True}}
+                    response = client.models.generate_content(
+                        model='gemini-2.0-flash-thinking-exp',
+                        contents=prompt,
+                        config=config
+                    )
                 else:
                     response = model.generate_content(prompt)
             
@@ -143,6 +154,24 @@ if __name__ == "__main__":
 
                 if MODEL_NAME == "gemini-2.0-flash-exp":
                     raise ValueError("The model 'gemini-2.0-flash-exp' does not support image-only inputs.")
+                
+                elif MODEL_NAME == "gemini-2.0-flash-thinking-exp":
+                    IMAGE_PATH = f"jpg_images/image_{id}.jpg"
+                    IMAGE_MIME_TYPE = "image/jpg"
+
+                    with open(IMAGE_PATH, "rb") as f:
+                        image_bytes = f.read()
+
+                    config = {'thinking_config': {'include_thoughts': True}}
+                    response = client.models.generate_content(
+                        model="gemini-2.0-flash-thinking-exp",
+                        contents=[
+                            prompt,
+                            types.Part.from_bytes(data=image_bytes, mime_type=IMAGE_MIME_TYPE),
+                        ],
+                        config=config
+                    )
+
                 else:
                     try:
                         input_img = PIL.Image.open(f"jpg_images/image_{id}.jpg")
@@ -153,9 +182,20 @@ if __name__ == "__main__":
                     
                     response = model.generate_content([prompt, input_img])
 
-            with open(f"out/batch_api/gemini/{output_dir}/completions_{MODEL_NAME}_{args.mode}.jsonl", 'a') as f:
-                json.dump({"id": id, "gold_answer": answer, "final_answer": extract_answer(response.text), "reasoning": response.text}, f, ensure_ascii=False)
-                f.write('\n')
+            if MODEL_NAME == "gemini-2.0-flash-thinking-exp":
+                for part in response.candidates[0].content.parts:
+                    if part.thought:
+                       model_reasoning = part.text
+                    else:
+                        model_answer = part.text
+
+                with open(f"out/batch_api/gemini/{output_dir}/completions_{MODEL_NAME}_{args.mode}.jsonl", 'a') as f:
+                    json.dump({"id": id, "gold_answer": answer, "final_answer": extract_answer(model_answer), "reasoning": model_reasoning, "answer": model_answer}, f, ensure_ascii=False)
+                    f.write('\n')
+            else:
+                with open(f"out/batch_api/gemini/{output_dir}/completions_{MODEL_NAME}_{args.mode}.jsonl", 'a') as f:
+                    json.dump({"id": id, "gold_answer": answer, "final_answer": extract_answer(response.text), "reasoning": response.text}, f, ensure_ascii=False)
+                    f.write('\n')
             
             time.sleep(5)
     
