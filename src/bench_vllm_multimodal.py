@@ -422,6 +422,7 @@ model_example_map = {
     "pixtral-12b": load_pixtral_hf,
     "InternVL2_5-38B-MPO": load_intern,
     "InternVL2_5-38B": load_intern,
+    "InternVL2_5-8B-MPO": load_intern,
 }
 
 if __name__ == "__main__":
